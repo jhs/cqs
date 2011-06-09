@@ -19,6 +19,11 @@ exports.opt_str = function(opts) {
   return opts;
 }
 
+
+exports.enc_id = function encode_doc_id(id) {
+  return encodeURIComponent(id).replace(/^_design%2[fF]/, '_design/');
+}
+
 // Wrap log4js so it will not be a dependency.
 var VERBOSE = !!process.env.verbose;
 

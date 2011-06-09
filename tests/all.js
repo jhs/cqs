@@ -6,10 +6,36 @@ var COUCH = 'http://localhost:5984';
 var DB    = 'cqs_test';
 
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
+  , util = require('util')
   , assert = require('assert')
+  , request = require('request')
   ;
 
 var TESTS = [
+
+function setup(done) {
+  var url = COUCH + '/' + DB;
+  request({method:'DELETE', uri:url}, function(er, resp, body) {
+    if(er) throw er;
+    var json = JSON.parse(body);
+
+    var already_gone = (resp.statusCode === 404 && json.error === 'not_found');
+    var deleted      = (resp.statusCode === 200 && json.ok    === true);
+
+    if(! (already_gone || deleted))
+      throw new Error('Unknown DELETE response: ' + resp.statusCode + ' ' + body);
+
+    request({method:'PUT', uri:url}, function(er, resp, body) {
+      if(er) throw er;
+      var json = JSON.parse(body);
+
+      if(resp.statusCode !== 201 || json.ok !== true)
+        throw new Error('Unknown PUT response: ' + resp.statusCode + ' ' + body);
+
+      done();
+    })
+  })
+},
 
 function create_queue(done) {
   cqs.CreateQueue('foo', function(er, res) {
@@ -74,7 +100,11 @@ function run() {
 function complete() {
   process.stdout.write('\n\n');
   errors.forEach(function(er) {
-    console.error(er.stack);
+    var stack = er.stack;
+    if(er.expected || er.actual)
+      stack = "expected=" + util.inspect(er.expected) + ' actual=' + util.inspect(er.actual) + '\n' + stack;
+
+    console.error(stack);
   })
 
   console.log('Done: pass:' + count.pass + ' fail:' + count.fail);
