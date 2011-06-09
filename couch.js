@@ -132,8 +132,8 @@ Database.prototype.with_db = function(cb) {
 
       self.log.debug('Database confirmed: ' + db_url);
 
-      self.couch.known_dbs[self.name] = db;
-      self.db                         = db;
+      self.couch.known_dbs[self.name] = db_url;
+      self.db                         = db_url;
 
       return cb();
     })
