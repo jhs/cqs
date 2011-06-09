@@ -30,13 +30,14 @@ var TEMPLATE =
 }
 
 function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
-  var NAME = "XXX_NAME_XXX";
+  var NAME = "XXX_name_XXX";
+
+  var for_me = XXX_for_me_XXX;
 
   if(! /^CQS\//.test(newDoc._id)) // A simple test, hopefully future-proof
     throw({forbidden: "This database is for CQS only"});
 
-  var match = /^CQS\/([a-zA-Z0-9_-]{1,80})\/([a-fA-F0-9]+)$/.exec(newDoc._id);
-  if(!match || match[1] !== NAME)
+  if(! for_me(newDoc))
     return; // Another ddoc will handle this validation.
 
   var good_keys = [ "_id", "_rev", "views", "spatial", "validate_doc_update"
@@ -97,6 +98,8 @@ module.exports = { "DDoc" : DDoc
 //
 
 function templated_ddoc(name) {
+  var for_this_ddoc = func_from_template(for_me, {name:name});
+
   function stringify_functions(obj) {
     var copy = {};
     
@@ -111,7 +114,7 @@ function templated_ddoc(name) {
     }
 
     else if(typeof obj === 'function')
-      return func_from_template(obj, name);
+      return func_from_template(obj, {name:name, for_me:for_this_ddoc});
 
     else
       return lib.JDUP(obj);
@@ -120,12 +123,21 @@ function templated_ddoc(name) {
   return stringify_functions(TEMPLATE);
 }
 
-function func_from_template(func, name) {
+function func_from_template(func, vals) {
+  var name = vals.name;
   if(!name || typeof name !== 'string')
     throw new Error('Invalid queue name: ' + util.inspect(name));
 
   var src = func.toString();
   src = src.replace(/^function.*?\(/, 'function (');
-  src = src.replace(/XXX_NAME_XXX/g, name);
+
+  src = src.replace(/XXX_(.*?)_XXX/g, function(match, key) {
+    return vals[key];
+  })
   return src;
+}
+
+function for_me(doc) {
+  var tester = /^CQS\/XXX_name_XXX\/([a-fA-F0-9]+)$/;
+  return tester.test(doc._id);
 }
