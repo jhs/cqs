@@ -40,16 +40,8 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   if(! for_me(newDoc))
     return; // Another ddoc will handle this validation.
 
-  var good_keys = [ "_id", "_rev", "views", "spatial", "validate_doc_update"
-                  , "ApproximateNumberOfMessages"
-                  , "ApproximateNumberOfMessagesNotVisible"
-                  , "VisibilityTimeout"
-                  , "CreatedTimestamp"
-                  , "LastModifiedTimestamp"
-                  , "Policy"
-                  , "MaximumMessageSize"
-                  , "MessageRetentionPeriod"
-                  , "QueueArn"
+  var good_keys = [ "_id", "_rev",
+                  // TODO
                   ];
 
   var key;
