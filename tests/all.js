@@ -67,6 +67,23 @@ function list_queues(done) {
   })
 },
 
+function list_queues_with_prefix(done) {
+  cqs.ListQueues('f', function(er, res) {
+    if(er) throw er;
+    assert.equal(1, res.length);
+    assert.ok(res.indexOf('foo') !== -1);
+    assert.ok(res.indexOf('bar') === -1);
+
+    cqs.ListQueues('b', function(er, res) {
+      if(er) throw er;
+      assert.equal(1, res.length);
+      assert.ok(res.indexOf('foo') === -1);
+      assert.ok(res.indexOf('bar') !== -1);
+      done();
+    })
+  })
+},
+
 ]; // TESTS
 
 //
