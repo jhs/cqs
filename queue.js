@@ -48,7 +48,10 @@ Queue.prototype.create = function create_queue(cb) {
 
 function create_queue(opts, cb) {
   var queue = new Queue(opts);
-  queue.create(cb);
+  queue.create(function(er, name) {
+    if(er) return cb(er);
+    return cb(null, queue);
+  })
 }
 
 

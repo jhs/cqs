@@ -43,17 +43,19 @@ function setup(done) {
 //
 
 function create_queue(done) {
-  cqs.CreateQueue('foo', function(er, res) {
+  cqs.CreateQueue('foo', function(er, queue) {
     if(er) return done(er);
-    assert.equal(res, 'foo', "CreateQueue returns the queue name");
+    assert.equal(queue.name, 'foo', "CreateQueue returns the queue name");
+    state.foo = queue;
     done();
   })
 },
 
 function create_queue_with_obj(done) {
-  cqs.CreateQueue({name:'bar'}, function(er, res) {
+  cqs.CreateQueue({name:'bar'}, function(er, queue) {
     if(er) return done(er);
-    assert.equal(res, 'bar', "CreateQueue returns the queue name");
+    assert.equal(queue.name, 'bar', "CreateQueue returns the queue name");
+    state.bar = queue;
     done();
   })
 },
