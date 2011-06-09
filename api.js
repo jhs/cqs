@@ -26,7 +26,7 @@ function with_defaults(opts) {
       return;
 
     function default_wrapper(given_opts) {
-      given_opts = lib.opt_str(given_opts);
+      given_opts = lib.opt_def(given_opts);
       lib.copy(opts, given_opts);
       arguments[0] = given_opts;
 

@@ -1,3 +1,9 @@
+// Utility library
+//
+
+var request = require('request')
+  ;
+
 exports.scrub_creds = function scrub_creds(url) {
   return url.replace(/^(https?:\/\/)[^:]+:[^@]+@(.*)$/, '$1$2'); // Scrub username and password
 }
@@ -12,13 +18,35 @@ exports.copy = function(src, dst) {
   })
 }
 
-
-exports.opt_str = function(opts) {
+exports.opt_def = function(opts) {
   if(typeof opts === 'string')
     opts = {'_str': opts};
+  else if(typeof opts === 'function')
+    opts = {'_func': opts};
   return opts;
 }
 
+exports.req_json = function req_json(opts, callback) {
+  if(typeof opts === 'string')
+    opts = {'uri':opts};
+
+  opts.headers = opts.headers || {};
+  opts.headers['accept']       = 'application/json';
+  opts.headers['content-type'] = 'application/json';
+
+  return request(opts, function(er, resp, body) {
+    if(er) return callback(er);
+
+    if(resp.statusCode < 200 || resp.statusCode >= 300)
+      return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
+
+    var obj;
+    try        { obj = JSON.parse(body) }
+    catch (js_er) { return callback(js_er) }
+
+    return callback(null, resp, obj);
+  })
+}
 
 exports.enc_id = function encode_doc_id(id) {
   return encodeURIComponent(id).replace(/^_design%2[fF]/, '_design/');
