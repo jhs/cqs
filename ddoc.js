@@ -60,8 +60,8 @@ function DDoc (queue) {
 
   assert.ok(queue.name);
   assert.ok(queue.DefaultVisibilityTimeout);
-  self.queue = queue;
 
+  self.name = queue.name;
   self.copy_template();
 
   self._id = "_design/CQS/" + queue.name;
@@ -74,10 +74,10 @@ function DDoc (queue) {
 DDoc.prototype.copy_template = function() {
   var self = this;
 
-  if(self.queue.name.length < 1 || self.queue.name.length > 80)
-    throw new Error("Queue name exceeds length max of 80: " + self.queue.name.length)
+  if(self.name.length < 1 || self.name.length > 80)
+    throw new Error("Queue name exceeds length max of 80: " + self.name.length)
 
-  var ddoc = templated_ddoc(self.queue.name);
+  var ddoc = templated_ddoc(self.name);
   lib.copy(ddoc, self);
 }
 
