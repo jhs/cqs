@@ -6,10 +6,12 @@ var COUCH = 'http://localhost:5984';
 var DB    = 'cqs_test';
 
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
-  , util = require('util')
+  , util = require('util'), I = util.inspect
   , assert = require('assert')
   , request = require('request')
   ;
+
+var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *only* the xx tests.
 
 var state = {};
 var TESTS = [
@@ -115,7 +117,8 @@ function run() {
   if(!test)
     return complete();
 
-  if(/^xx/.test(test.name))
+  var starts_with_xx = /^xx/.test(test.name);
+  if( XX_MEANS_EXCLUDE ? starts_with_xx : !starts_with_xx )
     return count.inc('skip');
 
   function done(er) {
@@ -161,3 +164,31 @@ run();
 //
 // Utilities
 //
+
+if(! assert.member)
+  assert.member = function(elem, list, message) {
+    var is_member = false;
+    list.forEach(function(list_elem) {
+      if(list_elem === elem)
+        is_member = true;
+    })
+
+    if(!is_member)
+      throw new Error(message || "");
+  }
+
+if(! assert.any)
+  assert.any = function(list, message, pred) {
+    for(var a = 0; a < list.length; a++)
+      if(pred.call(null, list[a]))
+        return true;
+    throw new Error(message || "assert.any");
+  }
+
+if(! assert.none)
+  assert.none = function(list, message, pred) {
+    for(var a = 0; a < list.length; a++)
+      if(pred.call(null, list[a]))
+        throw new Error(message || "assert.none");
+    return true;
+  }
