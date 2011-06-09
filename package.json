@@ -1,0 +1,16 @@
+{ "name": "cqs"
+, "version": "0.1.0"
+, "author": { "name": "Jason Smith"
+            , "email": "jhs@iriscouch.com" }
+, "description": "CouchDB Queue Service: An API-compatible Amazon SQS implementation on CouchDB"
+, "homepage": "http://github.com/iriscouch/cqs"
+, "repository": { "type": "git"
+                , "url": "git://github.com/iriscouch/cqs" }
+, "engines": [ "node" ]
+
+, "dependencies"   : { "request" : ">=1.9.6"
+                     }
+, "devDependencies": { "optimist": ">=0.2.0"
+                     }
+, "main": "api"
+}
