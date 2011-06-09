@@ -11,6 +11,7 @@ var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
   , request = require('request')
   ;
 
+var state = {};
 var TESTS = [
 
 function setup(done) {
@@ -84,6 +85,10 @@ function list_queues_with_prefix(done) {
   })
 },
 
+function xxsend_message(done) {
+  //cqs.
+},
+
 ]; // TESTS
 
 //
@@ -92,10 +97,13 @@ function list_queues_with_prefix(done) {
 
 var errors = [];
 var count = { pass: 0
+            , timeout: 0
             , fail: 0
+            , skip: 0
             , inc: function(type) {
                      this[type] += 1
-                     process.stdout.write(type === 'pass' ? '.' : 'F');
+                     var symbol = type[0].toUpperCase().replace(/P/, '.');
+                     process.stdout.write(symbol);
                      return run();
                    }
             }
@@ -105,10 +113,13 @@ function run() {
   if(!test)
     return complete();
 
+  if(/^xx/.test(test.name))
+    return count.inc('skip');
+
   function done(er) {
     if(er === 'timeout') {
       errors.push(new Error('Timeout: ' + test.name));
-      return count.inc('fail');
+      return count.inc('timeout');
     }
 
     clearTimeout(test.timer);
@@ -138,7 +149,7 @@ function complete() {
     console.error(stack);
   })
 
-  console.log('Done: pass:' + count.pass + ' fail:' + count.fail);
+  console.log('Done: pass:' + count.pass + ' fail:' + count.fail + ' timeout:' + count.timeout + ' skip:' + count.skip);
 }
 
 run();
