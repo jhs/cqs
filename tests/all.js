@@ -37,6 +37,10 @@ function setup(done) {
   })
 },
 
+//
+// TESTS
+//
+
 function create_queue(done) {
   cqs.CreateQueue('foo', function(er, res) {
     if(er) return done(er);
@@ -49,6 +53,16 @@ function create_queue_with_obj(done) {
   cqs.CreateQueue({name:'bar'}, function(er, res) {
     if(er) return done(er);
     assert.equal(res, 'bar', "CreateQueue returns the queue name");
+    done();
+  })
+},
+
+function list_queues(done) {
+  cqs.ListQueues(function(er, res) {
+    if(er) throw er;
+    assert.equal(2, res.length);
+    assert.ok(res.indexOf('foo') !== -1);
+    assert.ok(res.indexOf('bar') !== -1);
     done();
   })
 },

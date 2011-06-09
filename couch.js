@@ -62,7 +62,7 @@ Database.prototype.request = function(opts, callback) {
     if(er) return callback(er);
 
     opts.uri = self.couch.url + '/' + self.name + '/' + opts.uri;
-    return req_json(opts, callback);
+    return lib.req_json(opts, callback);
   })
 }
 
@@ -80,7 +80,7 @@ Database.prototype.with_couch = function(cb) {
   }
 
   self.log.debug('Confirming Couch: ' + self.couch_url);
-  req_json(self.couch_url, function(er, resp, body) {
+  lib.req_json(self.couch_url, function(er, resp, body) {
     if(er) return cb && cb(er);
 
     if(body.couchdb !== 'Welcome')
@@ -89,7 +89,7 @@ Database.prototype.with_couch = function(cb) {
     var session_url = self.couch_url + '/_session';
     self.log.debug('Confirming session: ' + session_url);
 
-    req_json(session_url, function(er, resp, session) {
+    lib.req_json(session_url, function(er, resp, session) {
       if(er) return cb && cb(er);
 
       if(!session.userCtx)
@@ -124,7 +124,7 @@ Database.prototype.with_db = function(cb) {
     var db_url = self.couch.url + '/' + self.name;
 
     self.log.debug('Confirming DB: ' + db_url);
-    req_json(db_url, function(er, resp, db) {
+    lib.req_json(db_url, function(er, resp, db) {
       if(er) return cb && cb(er);
 
       if(db.db_name !== self.name)
@@ -147,25 +147,3 @@ module.exports = { "Database" : Database
 //
 // Utilities
 //
-
-function req_json(opts, callback) {
-  if(typeof opts === 'string')
-    opts = {'uri':opts};
-
-  opts.headers = opts.headers || {};
-  opts.headers['accept']       = 'application/json';
-  opts.headers['content-type'] = 'application/json';
-
-  return request(opts, function(er, resp, body) {
-    if(er) return callback(er);
-
-    if(resp.statusCode < 200 || resp.statusCode >= 300)
-      return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
-
-    var obj;
-    try        { obj = JSON.parse(body) }
-    catch (js_er) { return callback(js_er) }
-
-    return callback(null, resp, obj);
-  })
-}

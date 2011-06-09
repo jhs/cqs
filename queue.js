@@ -6,6 +6,7 @@ var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
   , assert = require('assert')
+  , querystring = require('querystring')
   ;
 
 //
@@ -13,6 +14,7 @@ var lib = require('./lib')
 //
 
 var DEFAULT_VISIBILITY_TIMEOUT = 30;
+var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
 
 //
 // API
@@ -49,11 +51,49 @@ function create_queue(opts, cb) {
   queue.create(cb);
 }
 
+
+function list_queues(opts, cb) {
+  var prefix = opts.prefix || opts._str;
+
+  if(!cb && opts._func)
+    cb = opts._func;
+
+  var startkey = '_design/CQS\/';
+  var endkey   = '_design/CQS\/';
+
+  if(prefix) {
+    startkey += prefix;
+    endkey   += prefix;
+  }
+
+  endkey += '\ufff0';
+
+  var query = { startkey: lib.JS(startkey)
+              , endkey  : lib.JS(endkey)
+              };
+
+  var db_url = opts.couch + '/' + opts.db;
+  var view = db_url + '/_all_docs?' + querystring.stringify(query);
+  lib.req_json(view, function(er, resp, view) {
+    if(er) return cb(er);
+    var names = view.rows.map(function(row) { return id_to_name(row.id) });
+    return cb(null, names);
+  })
+}
+
 module.exports = { "Queue" : Queue
                  , "CreateQueue": create_queue
+                 , "ListQueues" : list_queues
                  };
 
 
 //
 // Utilities
 //
+
+function id_to_name(id) {
+  var match = QUEUE_DDOC_ID_RE.exec(id);
+  if(!match)
+    throw new Error("Unknown queue ddoc id: " + id);
+  return match[1];
+}
