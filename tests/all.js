@@ -136,8 +136,10 @@ function run() {
   var timeout = 250;
   test.timer = setTimeout(function() { done('timeout') }, timeout);
 
+  // This is pretty convenient. Simply throw an error and we'll assume it pertains to this unit test.
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(er) { return done(er); })
+
   test(done);
 }
 
