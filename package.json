@@ -13,5 +13,5 @@
                      }
 , "devDependencies": { "optimist": ">=0.2.0"
                      }
-, "main": "api"
+, "main": "./api"
 }
