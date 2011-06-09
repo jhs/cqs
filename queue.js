@@ -79,8 +79,16 @@ function list_queues(opts, cb) {
   var view = db_url + '/_all_docs?' + querystring.stringify(query);
   lib.req_json(view, function(er, resp, view) {
     if(er) return cb(er);
-    var names = view.rows.map(function(row) { return id_to_name(row.id) });
-    return cb(null, names);
+
+    function get_queue(row) {
+      return new Queue({ couch: opts.couch
+                       , db   : opts.db
+                       , name : id_to_name(row.id)
+                       })
+    }
+
+    var queues = view.rows.map(get_queue);
+    return cb(null, queues);
   })
 }
 

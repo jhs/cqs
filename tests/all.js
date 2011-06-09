@@ -63,35 +63,42 @@ function create_queue_with_obj(done) {
 },
 
 function list_queues(done) {
-  cqs.ListQueues(function(er, res) {
+  cqs.ListQueues(function(er, queues) {
     if(er) throw er;
-    assert.equal(2, res.length);
-    assert.ok(res.indexOf('foo') !== -1);
-    assert.ok(res.indexOf('bar') !== -1);
+    assert.equal(2, queues.length);
+
+    assert.any(queues, "Queue list should include foo", function(q) { return q.name == 'foo' });
+    assert.any(queues, "Queue list should include bar", function(q) { return q.name == 'bar' });
     done();
   })
 },
 
 function list_queues_with_prefix(done) {
-  cqs.ListQueues('f', function(er, res) {
+  cqs.ListQueues('f', function(er, queues) {
     if(er) throw er;
-    assert.equal(1, res.length);
-    assert.ok(res.indexOf('foo') !== -1);
-    assert.ok(res.indexOf('bar') === -1);
+    assert.equal(1, queues.length);
 
-    cqs.ListQueues('b', function(er, res) {
+    function is_foo(q) { return q.name == 'foo' }
+    function is_bar(q) { return q.name == 'bar' }
+
+    assert.none(queues, "Queues should not have bar", is_bar);
+    assert.any(queues , "Queues should have foo"    , is_foo);
+
+    cqs.ListQueues('b', function(er, queues) {
       if(er) throw er;
-      assert.equal(1, res.length);
-      assert.ok(res.indexOf('foo') === -1);
-      assert.ok(res.indexOf('bar') !== -1);
+      assert.equal(1, queues.length);
+      assert.none(queues, "Queues should not have foo", is_foo);
+      assert.any(queues , "Queues should have bar"    , is_bar);
       done();
     })
   })
 },
 
+/*
 function xxsend_message(done) {
   //cqs.
 },
+*/
 
 ]; // TESTS
 
