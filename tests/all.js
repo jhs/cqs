@@ -2,17 +2,29 @@
 // The changes_couchdb command-line interface.
 //
 
-var cqs = require('../api')
+var COUCH = 'http://localhost:5984';
+var DB    = 'cqs_test';
+
+var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
   , assert = require('assert')
   ;
-
-var COUCH = 'http://localhost:5984';
-var DB    = COUCH + '/cqs_test';
 
 var TESTS = [
 
 function create_queue(done) {
-  done();
+  cqs.CreateQueue('foo', function(er, res) {
+    if(er) return done(er);
+    assert.equal(res, 'foo', "CreateQueue returns the queue name");
+    done();
+  })
+},
+
+function create_queue_with_obj(done) {
+  cqs.CreateQueue({name:'bar'}, function(er, res) {
+    if(er) return done(er);
+    assert.equal(res, 'bar', "CreateQueue returns the queue name");
+    done();
+  })
 },
 
 ]; // TESTS
@@ -26,7 +38,7 @@ var count = { pass: 0
             , fail: 0
             , inc: function(type) {
                      this[type] += 1
-                     process.stdout.write(type === 'pass' ? '.' : 'E');
+                     process.stdout.write(type === 'pass' ? '.' : 'F');
                      return run();
                    }
             }
@@ -54,8 +66,9 @@ function run() {
   var timeout = 250;
   test.timer = setTimeout(function() { done('timeout') }, timeout);
 
-  try        { test(done); }
-  catch (er) { done(er)    }
+  process.removeAllListeners('uncaughtException');
+  process.on('uncaughtException', function(er) { return done(er); })
+  test(done);
 }
 
 function complete() {

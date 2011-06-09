@@ -12,6 +12,13 @@ exports.copy = function(src, dst) {
   })
 }
 
+
+exports.opt_str = function(opts) {
+  if(typeof opts === 'string')
+    opts = {'_str': opts};
+  return opts;
+}
+
 // Wrap log4js so it will not be a dependency.
 var VERBOSE = !!process.env.verbose;
 
