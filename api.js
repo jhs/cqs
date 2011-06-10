@@ -8,17 +8,18 @@ var lib = require('./lib')
   , message = require('./message')
   ;
 
-var API = { 'Db': couch.Database
-
-          , 'Queue'      : queue.Queue
-          , 'CreateQueue': queue.CreateQueue
+var API = { 'CreateQueue': queue.CreateQueue
           , 'ListQueues' : queue.ListQueues
           , 'SetQueueAttributes': queue.SetAttributes
-
-          , 'Message'       : message.Message
+          // TODO: GetQueueAttributes
           , 'SendMessage'   : message.send
           , 'ReceiveMessage': message.receive
           , 'DeleteMessage' : message.delete
+
+          // Unofficial object API
+          , 'Db'     : couch.Database
+          , 'Queue'  : queue.Queue
+          , 'Message': message.Message
           }
 
 
