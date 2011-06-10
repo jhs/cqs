@@ -31,6 +31,16 @@ function Couch () {
   this.known_dbs = {};
 }
 
+Couch.prototype.request = function(opts, callback) {
+  var self = this;
+
+  if(typeof opts === 'string')
+    opts = {'uri':opts};
+  opts.uri = self.url + '/' + opts.uri;
+
+  return lib.req_json(opts, callback);
+}
+
 
 function Database (opts) {
   var self = this;
@@ -57,12 +67,12 @@ Database.prototype.request = function(opts, callback) {
 
   if(typeof opts === 'string')
     opts = {'uri':opts};
+  opts.uri = self.name + '/' + opts.uri;
 
   self.with_db(function(er) {
-    if(er) return callback(er);
-
-    opts.uri = self.couch.url + '/' + self.name + '/' + opts.uri;
-    return lib.req_json(opts, callback);
+    if(er)
+      return callback(er);
+    self.couch.request(opts, callback);
   })
 }
 
