@@ -4,6 +4,8 @@
 var request = require('request')
   ;
 
+exports.LOG_LEVEL = process.env.cqs_log_level || "info";
+
 exports.scrub_creds = function scrub_creds(url) {
   return url.replace(/^(https?:\/\/)[^:]+:[^@]+@(.*)$/, '$1$2'); // Scrub username and password
 }
