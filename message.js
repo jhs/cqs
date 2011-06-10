@@ -19,6 +19,8 @@ var lib = require('./lib')
 function Message (opts) {
   var self = this;
 
+  lib.copy(opts, self, 'uppercase');
+
   self.MessageId   = opts.MessageId   || opts._id  || null;
   self.Body        = opts.MessageBody || opts.Body || opts._str || null;
   self.MD5OfMessageBody = null;
@@ -68,6 +70,50 @@ Message.prototype.send = function send_message(cb) {
 }
 
 
+Message.prototype.receive = function receive_message(callback) {
+  var self = this;
+  assert.ok(callback);
+  assert.ok(self.queue);
+  assert.ok(self.queue.db);
+  assert.ok(self.queue.db.couch);
+
+  assert.ok(self.mvcc);
+  assert.ok(self.mvcc._id);
+  assert.equal(self.MessageId, self.mvcc._id);
+  assert.ok('ApproximateReceiveCount'          in self, util.inspect(self));
+  assert.ok('ApproximateFirstReceiveTimestamp' in self);
+
+  self.queue.confirmed(function(er) {
+    if(er) return callback(er);
+
+    var doc = lib.JDUP(self.mvcc);
+    lib.copy(self, doc, function(k) { return /^[A-Z]/.test(k) });
+    delete doc.MessageId; // _id is used instead
+
+    doc.ReceiverId = self.queue.db.couch.userCtx.name;
+    doc.ApproximateReceiveCount += 1;
+    if(doc.ApproximateFirstReceiveTimestamp === null)
+      doc.ApproximateFirstReceiveTimestamp = new Date;
+
+    var timeout = self.VisibilityTimeout || self.queue.DefaultVisibilityTimeout;
+    doc.visible_at = new Date;
+    doc.visible_at.setSeconds(doc.visible_at.getSeconds() + timeout);
+
+    var path = lib.enc_id(doc._id)
+    self.queue.db.request({method:'PUT', uri:path, json:doc}, function(er, resp, result) {
+      if(er) return callback(er);
+
+      if(result.ok !== true)
+        return callback(new Error('Bad doc update result: ' + lib.JS(result)));
+
+      // Receive was a success.
+      delete self.mvcc;
+      self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
+      callback();
+    })
+  })
+}
+
 function receive(queue, opts, cb) {
   assert.ok(cb);
 
@@ -92,13 +138,30 @@ function receive(queue, opts, cb) {
     queue.db.request(path, function(er, resp, view) {
       if(er) return cb(er);
 
-      var messages = view.rows.map(function(row) {
+      if(view.rows.length === 0)
+        return cb(null, []);
+
+      // Don't lose the order CouchDB set for the messages.
+      var messages = [], count = 0;
+      function on_receive(er, pos, msg) {
+        if(er)
+          queue.log.error('Receive error', er);
+
+        messages[pos] = msg || null;
+
+        count += 1;
+        if(count === view.rows.length) {
+          messages = messages.filter(function(x) { return !!x });
+          cb(null, messages);
+        }
+      }
+
+      view.rows.forEach(function(row, i) {
         var message = new Message(row.value);
         message.queue = queue;
-        return message;
+        message.mvcc = {'_id':row.value._id, '_rev':row.value._rev};
+        message.receive(function(er) { on_receive(er, i, message) });
       })
-
-      cb(null, messages);
     })
   })
 }

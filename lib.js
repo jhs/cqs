@@ -16,6 +16,8 @@ exports.JDUP = function(obj) { return JSON.parse(JSON.stringify(obj)) };
 
 exports.copy = function(src, dst, pred) {
   pred = pred || function() { return true };
+  if(pred === 'uppercase')
+    pred = function(key) { return /^[A-Z]/.test(key) };
 
   Object.keys(src).forEach(function(key) {
     var val = src[key];

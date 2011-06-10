@@ -49,7 +49,11 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
                   , 'visible_at'
                   , 'ApproximateReceiveCount'
                   , 'ApproximateFirstReceiveTimestamp'
+                  , 'MD5OfMessageBody'
                   , 'Body'
+
+                  // Some extensions
+                  , 'ReceiverId'
                   ];
 
   var key;
@@ -57,8 +61,16 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
     if(good_keys.indexOf(key) === -1)
       throw({forbidden: "Invalid field: " + key});
 
-  if(newDoc.SenderId !== userCtx.name)
-    throw({forbidden: 'Must set SenderId to your name: ' + JSON.stringify(userCtx.name)});
+  if(oldDoc) {
+    // Checkout ("receive")
+    if(newDoc.ReceiverId !== userCtx.name)
+      throw({forbidden: 'Must set ReceiverId to your name: ' + JSON.stringify(userCtx.name)});
+
+  } else {
+    // Message send
+    if(newDoc.SenderId !== userCtx.name)
+      throw({forbidden: 'Must set SenderId to your name: ' + JSON.stringify(userCtx.name)});
+  }
 }
 
 function visible_at(doc) {
