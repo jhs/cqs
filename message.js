@@ -95,9 +95,9 @@ Message.prototype.receive = function receive_message(callback) {
     if(doc.ApproximateFirstReceiveTimestamp === null)
       doc.ApproximateFirstReceiveTimestamp = new Date;
 
-    var timeout = self.VisibilityTimeout || self.queue.DefaultVisibilityTimeout;
+    var timeout = self.VisibilityTimeout || self.queue.VisibilityTimeout;
     var visible_at = new Date;
-    visible_at.setSeconds(visible_at.getSeconds() + timeout);
+    visible_at.setMilliseconds(visible_at.getMilliseconds() + (timeout * 1000));
     doc.visible_at = visible_at;
 
     var path = lib.enc_id(doc._id)
@@ -114,6 +114,34 @@ Message.prototype.receive = function receive_message(callback) {
       self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
       callback(null, self);
     })
+  })
+}
+
+Message.prototype.delete = function delete_message(callback) {
+  var self = this;
+  assert.ok(callback);
+  assert.ok(self.queue);
+  assert.ok(self.queue.db);
+  assert.ok(self.ReceiptHandle, "Must have a ReceiptHandle to delete");
+
+  var id = self.ReceiptHandle._id;
+  var req = { method: 'DELETE'
+            , uri   : lib.enc_id(id) + '?rev=' + self.ReceiptHandle._rev
+            , headers: {'content-type': 'application/json'}
+            }
+  self.queue.db.request(req, function(er, resp, result) {
+    // Note: delete always returns success.
+    if(er)
+      self.log.info('Failed to delete ' + id + ': ' + er.message);
+
+    if(result.ok !== true)
+      self.log.info('Unknown response to delete' + lib.JS(result));
+
+    Object.keys(self).forEach(function (key) {
+      if(/^[A-Z]/.test(key))
+        delete self[key];
+    })
+    return callback(null, self);
   })
 }
 
@@ -134,11 +162,14 @@ function receive(queue, opts, cb) {
   if(typeof opts === 'number')
     opts = { 'MaxNumberOfMessages': opts };
 
+  if(queue._str)
+    queue = new (require('./queue').Queue)({couch:queue.couch, db:queue.db, name:queue._str});
+
   queue.confirmed(function(er) {
     if(er) return cb(er);
 
     opts.MaxNumberOfMessages = opts.MaxNumberOfMessages || 1;
-    opts.VisibilityTimeout = opts.VisibilityTimeout || queue.DefaultVisibilityTimeout;
+    opts.VisibilityTimeout = opts.VisibilityTimeout || queue.VisibilityTimeout;
 
     var startkey = lib.JS([ "" ]);
     var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
@@ -183,9 +214,14 @@ function send(queue, opts, cb) {
   return queue.SendMessage(opts, cb);
 }
 
+function delete_message(msg, cb) {
+  return msg.delete(cb);
+}
+
 module.exports = { "Message" : Message
                  , "receive" : receive
                  , "send"    : send
+                 , "delete"  : delete_message
                  };
 
 

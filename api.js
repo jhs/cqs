@@ -18,6 +18,7 @@ var API = { 'Db': couch.Database
           , 'Message'       : message.Message
           , 'SendMessage'   : message.send
           , 'ReceiveMessage': message.receive
+          , 'DeleteMessage' : message.delete
           }
 
 

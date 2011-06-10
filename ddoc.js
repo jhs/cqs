@@ -43,7 +43,7 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   if(!msg_id)
     return; // Another ddoc will handle this validation.
 
-  var good_keys = [ "_id", "_rev", "_revisions"
+  var good_keys = [ "_id", "_rev", "_revisions", "_deleted"
                   , 'SenderId'
                   , 'SentTimestamp'
                   , 'visible_at'
@@ -60,6 +60,13 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   for (key in newDoc)
     if(good_keys.indexOf(key) === -1)
       throw({forbidden: "Invalid field: " + key});
+
+  if(newDoc._deleted) {
+    if(oldDoc.ReceiverId !== userCtx.name)
+      throw {forbidden: 'You may not delete this document'};
+
+    return;
+  }
 
   if(!newDoc.visible_at)
     throw {forbidden: 'Must set visible_at'};

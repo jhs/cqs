@@ -123,7 +123,7 @@ function send_message(done) {
 },
 
 function receive_no_message(done) {
-  state.foo.ReceiveMessage(function(er, messages) {
+  cqs.ReceiveMessage(state.foo, function(er, messages) {
     if(er) throw er;
 
     assert.equal(messages.length, 0, 'Foo queue should not have any messages yet');
@@ -161,18 +161,45 @@ function set_queue_attribs(done) {
 },
 
 function make_sure_new_message_has_the_attributes(done) {
-  var now = new Date;
   cqs.SendMessage(state.foo, "Should be 0.5 visibility timeout", function(er) {
     if(er) throw er;
+    var now = new Date;
     cqs.ReceiveMessage(state.foo, function(er, msg) {
       if(er) throw er;
-
       msg = msg[0];
+
       var invisible_ms = msg.visible_at - now;
       assert.almost(invisible_ms, 500, "Invisible (should be 500): " + invisible_ms);
 
+      state.half_sec = msg;
       done();
     })
+  })
+},
+
+{'timeout': 1000},
+function delete_message(done) {
+  var now = new Date;
+  var vis_at = state.half_sec.visible_at;
+  assert.ok(vis_at);
+  assert.ok(vis_at - now > 0, "Too late to run this test: " + (now - state.half_sec.visible_at));
+
+  cqs.DeleteMessage(state.half_sec, function(er) {
+    if(er) throw er;
+
+    function check() {
+      cqs.ReceiveMessage('foo', function(er, msg) {
+        if(er) throw er;
+        assert.equal(msg.length, 0, "Should be no more messages left");
+        done();
+      })
+    }
+
+    var remaining = vis_at - (new Date);
+    if(remaining < 0)
+      check();
+    else
+      setTimeout(check, remaining + 50);
   })
 },
 
