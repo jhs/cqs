@@ -23,10 +23,13 @@ var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
 function Queue (opts) {
   var self = this;
 
-  self.db = new couch.Database(opts);
   self.name = opts.name || opts._str || null;
+  self.db = new couch.Database({'couch':opts.couch, 'db':opts.db});
 
   self.DefaultVisibilityTimeout = opts.DefaultVisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
+
+  self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
+  self.log.setLevel(lib.LOG_LEVEL);
 }
 
 
@@ -91,6 +94,7 @@ function list_queues(opts, cb) {
     return cb(null, queues);
   })
 }
+
 
 module.exports = { "Queue" : Queue
                  , "CreateQueue": create_queue

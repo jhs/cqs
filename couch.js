@@ -9,6 +9,7 @@
 
 var lib = require('./lib')
   , util = require('util')
+  , events = require('events')
   , assert = require('assert')
   , request = require('request')
   , querystring = require('querystring')
@@ -24,23 +25,85 @@ var KNOWN_COUCHES = {};
 // API
 //
 
-function Couch () {
-  this.url     = null;
-  this.userCtx = null;
+function Couch (opts) {
+  var self = this;
 
-  this.known_dbs = {};
+  self.url     = opts.url     || null;
+  self.userCtx = opts.userCtx || null;
+  self.known_dbs = {};
+
+  self.log = lib.log4js().getLogger('Couch/' + self.url);
+  self.log.setLevel(lib.LOG_LEVEL);
 }
 
 Couch.prototype.request = function(opts, callback) {
   var self = this;
+  assert.ok(self.url);
+  assert.ok(callback);
 
   if(typeof opts === 'string')
     opts = {'uri':opts};
   opts.uri = self.url + '/' + opts.uri;
 
-  return lib.req_json(opts, callback);
+  self.confirmed(function(er) {
+    if(er) return callback(er);
+
+    self.log.debug('Request: ' + opts.uri);
+    return lib.req_json(opts, callback);
+  })
 }
 
+Couch.prototype.confirmed = function confirm_couch(cb) {
+  var self = this;
+  assert.ok(cb);
+  assert.ok(self.url);
+
+  if(self.userCtx && self.known_dbs)
+    return cb();
+
+  var state = KNOWN_COUCHES[self.url];
+
+  if(state && state.userCtx && state.known_dbs) {
+    self.log.debug('Confirmation was cached: ' + self.url);
+    self.userCtx = state.userCtx;
+    self.known_dbs = state.known_dbs;
+    return cb();
+  }
+
+  if(!state) {
+    state = KNOWN_COUCHES[self.url] = new events.EventEmitter;
+    state.known_dbs = self.known_dbs;
+    self.log.debug('Initialized known_dbs for ' + self.url);
+
+    function emit(er, resp) { state.emit('done', er, resp) }
+
+    self.log.debug('Confirming Couch: ' + self.url);
+    lib.req_json(self.url, function(er, resp, body) {
+      if(er) return emit(er);
+
+      if(body.couchdb !== 'Welcome')
+        return emit(new Error('Bad CouchDB response from ' + self.url));
+
+      self.log.debug('Confirming session');
+      lib.req_json(self.url+'/_session', function(er, resp, session) {
+        if(er) return emit(er);
+
+        if(!session.userCtx)
+          return emit(new Error('Bad CouchDB response from ' + session_url));
+        self.log.debug('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
+
+        //self.log.debug('Calling back: ' + util.inspect(session.userCtx));
+        state.userCtx = session.userCtx;
+        return emit(null);
+      })
+    })
+  }
+
+  state.on('done', function(er, userCtx) {
+    if(er) return cb(er);
+    cb();
+  })
+}
 
 function Database (opts) {
   var self = this;
@@ -51,13 +114,11 @@ function Database (opts) {
   if(typeof opts.db !== 'string')
     throw new Error('Required "db" option with db name for queues');
 
-  self.couch_url = opts.couch;
-  self.name      = opts.db;
+  self.name   = opts.db;
+  self.couch  = new Couch({'url':opts.couch});
+  self.secObj = null;
 
-  self.couch  = null;
-  self.db     = null;
-
-  self.log = lib.log4js().getLogger('Queue/' + self.name);
+  self.log = lib.log4js().getLogger('DB/' + self.name);
   self.log.setLevel(process.env.cqs_log_level || "info");
 }
 
@@ -69,82 +130,57 @@ Database.prototype.request = function(opts, callback) {
     opts = {'uri':opts};
   opts.uri = self.name + '/' + opts.uri;
 
-  self.with_db(function(er) {
-    if(er)
-      return callback(er);
+  self.confirmed(function(er) {
+    if(er) return callback(er);
+
     self.couch.request(opts, callback);
   })
 }
 
 
-Database.prototype.with_couch = function(cb) {
+Database.prototype.confirmed = function(cb) {
   var self = this;
+  assert.ok(cb);
+  assert.ok(self.couch);
 
-  if(self.couch)
-    return cb && cb();
+  if(self.secObj)
+    return cb();
 
-  var known_couch = KNOWN_COUCHES[self.couch_url];
-  if(known_couch) {
-    self.couch = known_couch;
-    return cb && cb();
-  }
-
-  self.log.debug('Confirming Couch: ' + self.couch_url);
-  lib.req_json(self.couch_url, function(er, resp, body) {
-    if(er) return cb && cb(er);
-
-    if(body.couchdb !== 'Welcome')
-      return cb && cb(new Error('Bad CouchDB response from ' + self.couch_url));
-
-    var session_url = self.couch_url + '/_session';
-    self.log.debug('Confirming session: ' + session_url);
-
-    lib.req_json(session_url, function(er, resp, session) {
-      if(er) return cb && cb(er);
-
-      if(!session.userCtx)
-        return cb && cb(new Error('Bad CouchDB response from ' + session_url));
-
-      self.log.debug('Couch confirmed: ' + self.couch_url);
-      self.log.debug('User context: ' + lib.JS(session.userCtx));
-
-      self.couch = new Couch;
-      self.couch.url = self.couch_url;
-      self.couch.userCtx = session.userCtx;
-      KNOWN_COUCHES[self.couch_url] = self.couch;
-
+  self.couch.confirmed(function() {
+    var state = self.couch.known_dbs[self.name];
+    if(state && state.secObj) {
+      self.log.debug('Confirmation was cached: ' + self.name);
+      self.secObj = state.secObj;
       return cb();
-    })
-  })
-}
-
-Database.prototype.with_db = function(cb) {
-  var self = this;
-
-  self.with_couch(function() {
-    if(self.db)
-      return cb && cb();
-
-    var known_db = self.couch.known_dbs[self.name];
-    if(known_db) {
-      self.db = known_db;
-      return cb && cb();
     }
 
-    var db_url = self.couch.url + '/' + self.name;
+    if(!state) {
+      state = self.couch.known_dbs[self.name] = new events.EventEmitter;
+      function emit(er, resp) { state.emit('done', er, resp) }
 
-    self.log.debug('Confirming DB: ' + db_url);
-    lib.req_json(db_url, function(er, resp, db) {
-      if(er) return cb && cb(er);
+      self.log.debug('Confirming DB: ' + self.name);
+      self.couch.request(self.name, function(er, resp, db) {
+        if(er) return emit(er);
 
-      if(db.db_name !== self.name)
-        return cb && cb(new Error('Expected DB name "'+self.name+'": ' + db.db_name));
+        if(db.db_name !== self.name)
+          return emit(new Error('Expected DB name "'+self.name+'": ' + db.db_name));
 
-      self.log.debug('Database confirmed: ' + db_url);
+        self.log.debug('Checking _security: ' + self.name);
+        self.couch.request(self.name+'/_security', function(er, resp, secObj) {
+          if(er) return emit(er);
 
-      self.couch.known_dbs[self.name] = db_url;
-      self.db                         = db_url;
+          if(!secObj)
+            return emit(new Error('Bad _security response from ' + self.name + ': ' + lib.JS(secObj)));
 
+          self.log.debug('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
+          state.secObj = secObj;
+          return emit(null);
+        })
+      })
+    }
+
+    state.on('done', function(er, secObj) {
+      if(er) return cb(er);
       return cb();
     })
   })
