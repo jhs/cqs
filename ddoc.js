@@ -73,7 +73,7 @@ function DDoc (queue) {
   self.name = queue.name;
   self.copy_template();
 
-  self._id = "_design/CQS/" + queue.name;
+  self.id = "_design/CQS/" + queue.name;
   self.CreatedTimestamp = now;
   self.LastModifiedTimestamp = now;
   self.DefaultVisibilityTimeout = queue.DefaultVisibilityTimeout;

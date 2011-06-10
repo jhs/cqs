@@ -2,11 +2,12 @@
 //
 
 var lib = require('./lib')
-  , queue_ddoc = require('./ddoc')
   , util = require('util')
   , couch = require('./couch')
   , assert = require('assert')
+  , events = require('events')
   , message = require('./message')
+  , queue_ddoc = require('./ddoc')
   , querystring = require('querystring')
   ;
 
@@ -29,10 +30,30 @@ function Queue (opts) {
 
   self.DefaultVisibilityTimeout = opts.DefaultVisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
+  self.is_confirmed = false;
+
   self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
 }
 
+Queue.prototype.confirm =
+Queue.prototype.confirmed = function after_confirmed(cb) {
+  var self = this;
+  assert.ok(cb);
+
+  if(self.is_confirmed)
+    return cb(null, self);
+
+  var doc_id = new queue_ddoc.DDoc(self).id;
+  self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
+    if(er) return cb(er);
+
+    // Otherwise, copy all attributes from the API.
+    lib.copy(ddoc, self, function(k) { return /^[A-Z]/.test(k) });
+    self.is_confirmed = true;
+    cb(null, self);
+  })
+}
 
 Queue.prototype.create = function create_queue(cb) {
   var self = this;
@@ -40,11 +61,15 @@ Queue.prototype.create = function create_queue(cb) {
 
   var ddoc = new queue_ddoc.DDoc(self);
   var req = { method: 'PUT'
-            , uri   : lib.enc_id(ddoc._id)
-            , body  : lib.JS(ddoc)
+            , uri   : lib.enc_id(ddoc.id)
+            , json  : ddoc
             }
   self.db.request(req, function(er, resp, body) {
     if(er) return cb(er);
+
+    // Consider myself confirmed as well.
+    lib.copy(ddoc, self, function(k) { return /^[A-Z]/.test(k) });
+    self.is_confirmed = true;
     return cb(null, self.name);
   })
 }
@@ -53,10 +78,29 @@ Queue.prototype.create = function create_queue(cb) {
 Queue.prototype.SendMessage = function send_message(opts, cb) {
   var self = this;
 
-  var msg = new message.Message(opts);
-  msg.queue = self;
-  msg.send(cb);
+  self.confirmed(function() {
+    var msg = new message.Message(opts);
+    msg.queue = self;
+    msg.send(cb);
+  })
 }
+
+/*
+Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
+  var self = this;
+  assert.ok(cb);
+
+  if(typeof opts === 'function') {
+    cb = opts;
+    opts = 1;
+  }
+
+  if(typeof opts === 'number')
+    opts = { 'MaxNumberOfMessages': opts };
+
+  opts.VisibilityTimeout = opts.VisibilityTimeout || self.DefaultVisibilityTimeout;
+}
+*/
 
 
 function create_queue(opts, cb) {

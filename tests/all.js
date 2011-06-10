@@ -55,10 +55,20 @@ function create_queue(done) {
 },
 
 function create_queue_with_obj(done) {
-  cqs.CreateQueue({name:'bar'}, function(er, queue) {
+  cqs.CreateQueue({name:'bar', DefaultVisibilityTimeout:111}, function(er, queue) {
     if(er) return done(er);
     assert.equal(queue.name, 'bar', "CreateQueue returns the queue name");
     state.bar = queue;
+    done();
+  })
+},
+
+function instantiate_queue_loads_from_couch(done) {
+  var should_be_bar = new cqs.Queue('bar');
+  should_be_bar.confirm(function(er) {
+    if(er) throw er;
+    assert.equal(should_be_bar.DefaultVisibilityTimeout, 111, "Should get bar's visibility timeout");
+    assert.equal(should_be_bar.DefaultVisibilityTimeout, state.bar.DefaultVisibilityTimeout, "Should get bar's visibility timeout");
     done();
   })
 },
