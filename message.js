@@ -41,8 +41,8 @@ Message.prototype.send = function send_message(cb) {
   db.couch.uuid(function(er, uuid) {
     if(er) return cb(er);
 
-    var message_id = self.MessageId || uuid
-      , doc_id = 'CQS/' + self.queue.name + '/' + message_id
+    self.MessageId = self.MessageId || uuid;
+    var doc_id = 'CQS/' + self.queue.name + '/' + self.MessageId
       , sender_id = db.couch.userCtx.name
       , now = new Date
       ;
