@@ -31,6 +31,7 @@ function Queue (opts) {
   self.DefaultVisibilityTimeout = opts.DefaultVisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
   self.is_confirmed = false;
+  self.cache_confirmation = true;
 
   self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
@@ -47,7 +48,7 @@ Queue.prototype.confirmed = function after_confirmed(opt, cb) {
 
   assert.ok(cb);
 
-  if(opt === '--force') {
+  if(opt === '--force' || self.cache_confirmation === false) {
     self.log.debug('Clearing cache: ' + self.name);
     self.is_confirmed = false;
   }
