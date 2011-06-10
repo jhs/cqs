@@ -106,7 +106,7 @@ function list_queues_with_prefix(done) {
 },
 
 function send_message(done) {
-  state.foo.SendMessage('Message one', function(er, msg) {
+  state.bar.SendMessage('Message one', function(er, msg) {
     if(er) throw er;
 
     // TODO: confirm MD5.
@@ -115,6 +115,15 @@ function send_message(done) {
       assert.ok(key in msg, "SendMessage result needs key: " + key);
     })
 
+    done();
+  })
+},
+
+function receive_message(done) {
+  state.foo.ReceiveMessage(function(er, messages) {
+    if(er) throw er;
+
+    assert.equal(messages.length, 0, 'Foo queue should not have any messages yet');
     done();
   })
 },

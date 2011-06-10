@@ -49,6 +49,7 @@ Queue.prototype.confirmed = function after_confirmed(cb) {
     if(er) return cb(er);
 
     // Otherwise, copy all attributes from the API.
+    self.ddoc_id = doc_id;
     lib.copy(ddoc, self, function(k) { return /^[A-Z]/.test(k) });
     self.is_confirmed = true;
     cb(null, self);
@@ -68,6 +69,7 @@ Queue.prototype.create = function create_queue(cb) {
     if(er) return cb(er);
 
     // Consider myself confirmed as well.
+    self.ddoc_id = ddoc.id;
     lib.copy(ddoc, self, function(k) { return /^[A-Z]/.test(k) });
     self.is_confirmed = true;
     return cb(null, self.name);
@@ -85,22 +87,40 @@ Queue.prototype.SendMessage = function send_message(opts, cb) {
   })
 }
 
-/*
 Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
   var self = this;
-  assert.ok(cb);
 
   if(typeof opts === 'function') {
     cb = opts;
     opts = 1;
   }
 
+  assert.ok(cb);
+
   if(typeof opts === 'number')
     opts = { 'MaxNumberOfMessages': opts };
 
-  opts.VisibilityTimeout = opts.VisibilityTimeout || self.DefaultVisibilityTimeout;
+  self.confirmed(function(er) {
+    if(er) return cb(er);
+
+    opts.MaxNumberOfMessages = opts.MaxNumberOfMessages || 1;
+    opts.VisibilityTimeout = opts.VisibilityTimeout || self.DefaultVisibilityTimeout;
+
+    var endkey = [ lib.JS(new Date) ]; // Anything becoming visible up to now.
+
+    var query = querystring.stringify({ reduce: false
+                                      , limit : opts.MaxNumberOfMessages
+                                      , endkey: endkey
+                                      });
+    var path = lib.enc_id(self.ddoc_id) + '/_view/visibility_at?' + query;
+    self.db.request(path, function(er, resp, view) {
+      if(er) return cb(er);
+
+      var messages = view.rows;
+      cb(null, messages);
+    })
+  })
 }
-*/
 
 
 function create_queue(opts, cb) {

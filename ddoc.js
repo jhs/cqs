@@ -23,8 +23,10 @@ var TEMPLATE =
 , MessageRetentionPeriod               : 345600
 , QueueArn                             : null
 
-, "views": {
-           }
+, views: { "visibility_at": { map: visibility_at
+                            , reduce: '_count'
+                            }
+         }
 
 , "validate_doc_update": validate_doc_update
 }
@@ -57,6 +59,20 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 
   if(newDoc.SenderId !== userCtx.name)
     throw({forbidden: 'Must set SenderId to your name: ' + JSON.stringify(userCtx.name)});
+}
+
+function visibility_at(doc) {
+  var NAME = "XXX_name_XXX";
+  var my_msg_id = XXX_my_msg_id_XXX;
+
+  log(NAME + ' got ' + doc._id);
+  var key, val;
+  var msg_id = my_msg_id(doc);
+  if(msg_id && doc.visibility_at) {
+    key = [doc.visibility_at];
+    val = 'asdf';
+    emit(key, val);
+  }
 }
 
 //
