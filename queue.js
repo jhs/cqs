@@ -119,7 +119,6 @@ Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
 }
 
 
-Queue.prototype.SetQueueAttributes =
 Queue.prototype.SetAttributes = function set_attribs(opts, callback) {
   var self = this;
   assert.ok(opts);
@@ -194,9 +193,15 @@ function list_queues(opts, cb) {
 }
 
 
+function set_attributes(queue, attribs, callback) {
+  return queue.SetAttributes(attribs, callback);
+}
+
+
 module.exports = { "Queue" : Queue
                  , "CreateQueue": create_queue
                  , "ListQueues" : list_queues
+                 , "SetAttributes": set_attributes
                  };
 
 

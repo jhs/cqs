@@ -13,6 +13,7 @@ var API = { 'Db': couch.Database
           , 'Queue'      : queue.Queue
           , 'CreateQueue': queue.CreateQueue
           , 'ListQueues' : queue.ListQueues
+          , 'SetQueueAttributes': queue.SetAttributes
 
           , 'Message': message.Message
           }

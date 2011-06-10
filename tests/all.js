@@ -141,7 +141,7 @@ function receive_message(done) {
 },
 
 function set_queue_attribs(done) {
-  state.foo.SetQueueAttributes({'VisibilityTimeout':0.5}, function(er) {
+  cqs.SetQueueAttributes(state.foo, {'VisibilityTimeout':0.5}, function(er) {
     if(er) throw er;
 
     assert.equal(state.foo.VisibilityTimeout, 0.5, "Foo should have 0.5 second visibility now");
