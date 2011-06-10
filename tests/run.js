@@ -30,6 +30,18 @@ var count = { pass: 0
                    }
             }
 
+var decoration = {};
+TESTS = TESTS.reduce(function(so_far, obj) {
+  if(typeof obj === 'function') {
+    so_far.push(obj);
+    lib.copy(decoration, obj);
+    decoration = {};
+  } else {
+    lib.copy(obj, decoration);
+  }
+  return so_far;
+}, []);
+
 function run() {
   var test = TESTS.shift();
   if(!test)
@@ -39,6 +51,8 @@ function run() {
   if( XX_MEANS_EXCLUDE ? starts_with_xx : !starts_with_xx )
     return count.inc('skip');
 
+  var timeout = test.timeout || 250;
+  var start_at = new Date;
   function done(er) {
     if(er === 'timeout') {
       errors.push(new Error('Timeout: ' + test.name));
@@ -51,10 +65,14 @@ function run() {
       return count.inc('fail');
     }
 
+    var end_at = new Date;
+    var duration = end_at - start_at;
+    if(duration > (timeout * 0.80))
+      LOG.warn('Long processing time: ' + test.name);
+
     return count.inc('pass');
   }
 
-  var timeout = 2500;
   test.timer = setTimeout(function() { done('timeout') }, timeout);
 
   // This is pretty convenient. Simply throw an error and we'll assume it pertains to this unit test.
@@ -122,6 +140,6 @@ if(! assert.almost)
   assert.almost = function(actual, expected, message) {
     var delta = Math.abs(actual - expected);
     var margin = delta / expected;
-    if(margin > 0.01)
+    if(margin > 0.05)
       throw new Error(message || "assert.almost");
   }
