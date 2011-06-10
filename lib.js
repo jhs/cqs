@@ -40,18 +40,30 @@ exports.req_json = function req_json(opts, callback) {
   opts.headers['accept']       = 'application/json';
   opts.headers['content-type'] = 'application/json';
 
-  return request(opts, function(er, resp, body) {
-    if(er) return callback(er);
+  var timed_out = false, timer = setTimeout(on_timeout, opts.timeout || 5000);
+  function on_timeout() {
+    timed_out = true;
+    callback(new Error('Timeout: ' + opts.uri));
+  }
+
+  function on_req_done(er, resp, body) {
+    clearTimeout(timer);
+    if(timed_out)
+      return;
+    if(er)
+      return callback(er);
 
     if(resp.statusCode < 200 || resp.statusCode >= 300)
       return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
 
     var obj;
-    try        { obj = JSON.parse(body) }
+    try           { obj = JSON.parse(body) }
     catch (js_er) { return callback(js_er) }
 
     return callback(null, resp, obj);
-  })
+  }
+
+  return request(opts, on_req_done);
 }
 
 exports.enc_id = function encode_doc_id(id) {
