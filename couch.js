@@ -51,7 +51,8 @@ Couch.prototype.request = function(opts, callback) {
   self.confirmed(function(er) {
     if(er) return callback(er);
 
-    self.log.debug('Request: ' + opts.uri);
+    var method = opts.method || 'GET';
+    self.log.debug(method + ' ' + opts.uri);
     return lib.req_json(opts, callback);
   })
 }

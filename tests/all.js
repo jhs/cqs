@@ -140,4 +140,21 @@ function receive_message(done) {
   })
 },
 
+function set_queue_attribs(done) {
+  state.foo.SetQueueAttributes({'VisibilityTimeout':0.5}, function(er) {
+    if(er) throw er;
+
+    assert.equal(state.foo.VisibilityTimeout, 0.5, "Foo should have 0.5 second visibility now");
+
+    new cqs.Queue('foo').confirmed(function(er, foo2) {
+      if(er) throw er;
+
+      assert.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 0.5");
+      assert.equal(foo2.VisibilityTimeout,                         0.5, "Both foos should be 0.5");
+
+      done();
+    })
+  })
+},
+
 ] // TESTS

@@ -107,3 +107,9 @@ if(! assert.none)
         throw new Error(message || "assert.none");
     return true;
   }
+
+if(! assert.func)
+  assert.func = function(obj, message) {
+    if(typeof obj !== 'function')
+      throw new Error(message || "assert.func");
+  }
