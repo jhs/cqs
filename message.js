@@ -96,8 +96,9 @@ Message.prototype.receive = function receive_message(callback) {
       doc.ApproximateFirstReceiveTimestamp = new Date;
 
     var timeout = self.VisibilityTimeout || self.queue.DefaultVisibilityTimeout;
-    doc.visible_at = new Date;
-    doc.visible_at.setSeconds(doc.visible_at.getSeconds() + timeout);
+    var visible_at = new Date;
+    visible_at.setSeconds(visible_at.getSeconds() + timeout);
+    doc.visible_at = visible_at;
 
     var path = lib.enc_id(doc._id)
     self.queue.db.request({method:'PUT', uri:path, json:doc}, function(er, resp, result) {
@@ -108,13 +109,26 @@ Message.prototype.receive = function receive_message(callback) {
 
       // Receive was a success.
       delete self.mvcc;
+      self.import_doc(doc);
+      self.visible_at = visible_at;
       self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
-      callback();
+      callback(null, self);
     })
   })
 }
 
+Message.prototype.import_doc = function(doc) {
+  var self = this;
+
+  lib.copy(doc, self, 'uppercase');
+}
+
 function receive(queue, opts, cb) {
+  if(!cb && typeof opts === 'function') {
+    cb = opts;
+    opts = {};
+  }
+
   assert.ok(cb);
 
   if(typeof opts === 'number')
@@ -128,7 +142,6 @@ function receive(queue, opts, cb) {
 
     var startkey = lib.JS([ "" ]);
     var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
-
     var query = querystring.stringify({ reduce: false
                                       , limit : opts.MaxNumberOfMessages
                                       , startkey: startkey
@@ -166,8 +179,13 @@ function receive(queue, opts, cb) {
   })
 }
 
+function send(queue, opts, cb) {
+  return queue.SendMessage(opts, cb);
+}
+
 module.exports = { "Message" : Message
                  , "receive" : receive
+                 , "send"    : send
                  };
 
 

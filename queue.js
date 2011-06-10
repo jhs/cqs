@@ -28,7 +28,7 @@ function Queue (opts) {
   self.name = opts.name || opts._str || null;
   self.db = new couch.Database({'couch':opts.couch, 'db':opts.db});
 
-  self.DefaultVisibilityTimeout = opts.DefaultVisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
+  self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
   self.is_confirmed = false;
   self.cache_confirmation = true;
@@ -56,6 +56,7 @@ Queue.prototype.confirmed = function after_confirmed(opt, cb) {
   if(self.is_confirmed)
     return cb(null, self);
 
+  self.log.debug('Confirming: ' + self.name);
   var doc_id = new queue_ddoc.DDoc(self)._id;
   self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
     if(er) return cb(er);

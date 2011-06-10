@@ -3,8 +3,11 @@
 //
 
 var COUCH = 'http://localhost:5984';
-//COUCH = 'http://jhs-mac.local:15984';
 var DB    = 'cqs_test';
+
+if(process.env.charles)
+  COUCH = 'http://jhs-mac.local:15984';
+  //COUCH = 'http://192.168.3.10:15984';
 
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
   , util = require('util'), I = util.inspect
@@ -54,6 +57,7 @@ function create_queue_with_obj(done) {
   cqs.CreateQueue({name:'bar', DefaultVisibilityTimeout:111}, function(er, queue) {
     if(er) return done(er);
     assert.equal(queue.name, 'bar', "CreateQueue returns the queue name");
+    assert.equal(queue.VisibilityTimeout, 111, "Created with visibility 111");
     state.bar = queue;
     done();
   })
@@ -63,8 +67,8 @@ function instantiate_queue_loads_from_couch(done) {
   var should_be_bar = new cqs.Queue('bar');
   should_be_bar.confirm(function(er) {
     if(er) throw er;
-    assert.equal(should_be_bar.DefaultVisibilityTimeout, 111, "Should get bar's visibility timeout");
-    assert.equal(should_be_bar.DefaultVisibilityTimeout, state.bar.DefaultVisibilityTimeout, "Should get bar's visibility timeout");
+    assert.equal(should_be_bar.VisibilityTimeout, 111, "Should get bar's visibility timeout");
+    assert.equal(should_be_bar.VisibilityTimeout, state.bar.VisibilityTimeout, "Should get bar's visibility timeout");
     done();
   })
 },
@@ -145,12 +149,27 @@ function set_queue_attribs(done) {
     if(er) throw er;
 
     assert.equal(state.foo.VisibilityTimeout, 0.5, "Foo should have 0.5 second visibility now");
-
     new cqs.Queue('foo').confirmed(function(er, foo2) {
       if(er) throw er;
 
       assert.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 0.5");
       assert.equal(foo2.VisibilityTimeout,                         0.5, "Both foos should be 0.5");
+
+      done();
+    })
+  })
+},
+
+function make_sure_new_message_has_the_attributes(done) {
+  var now = new Date;
+  cqs.SendMessage(state.foo, "Should be 0.5 visibility timeout", function(er) {
+    if(er) throw er;
+    cqs.ReceiveMessage(state.foo, function(er, msg) {
+      if(er) throw er;
+
+      msg = msg[0];
+      var invisible_ms = msg.visible_at - now;
+      assert.almost(invisible_ms, 500, "Invisible (should be 500): " + invisible_ms);
 
       done();
     })

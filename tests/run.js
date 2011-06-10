@@ -2,13 +2,16 @@
 //
 // Run the tests
 
-var util = require('util'), I = util.inspect
+var lib = require('../lib')
+  , util = require('util'), I = util.inspect
   , assert = require('assert')
   , request = require('request')
   ;
 
 var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *only* the xx tests.
 var TESTS = require('./all');
+var LOG = lib.log4js().getLogger('tests');
+LOG.setLevel(lib.LOG_LEVEL);
 
 //
 // Runner
@@ -51,13 +54,14 @@ function run() {
     return count.inc('pass');
   }
 
-  var timeout = 250;
+  var timeout = 2500;
   test.timer = setTimeout(function() { done('timeout') }, timeout);
 
   // This is pretty convenient. Simply throw an error and we'll assume it pertains to this unit test.
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(er) { return done(er); })
 
+  LOG.debug('Test: ' + test.name);
   test(done);
 }
 
@@ -112,4 +116,12 @@ if(! assert.func)
   assert.func = function(obj, message) {
     if(typeof obj !== 'function')
       throw new Error(message || "assert.func");
+  }
+
+if(! assert.almost)
+  assert.almost = function(actual, expected, message) {
+    var delta = Math.abs(actual - expected);
+    var margin = delta / expected;
+    if(margin > 0.01)
+      throw new Error(message || "assert.almost");
   }

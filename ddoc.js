@@ -102,7 +102,7 @@ function DDoc (queue) {
   var now = new Date;
 
   assert.ok(queue.name);
-  assert.ok(queue.DefaultVisibilityTimeout);
+  assert.ok(queue.VisibilityTimeout);
 
   self.name = queue.name;
   self.copy_template();
@@ -110,7 +110,7 @@ function DDoc (queue) {
   self._id = "_design/CQS/" + queue.name;
   self.CreatedTimestamp = now;
   self.LastModifiedTimestamp = now;
-  self.DefaultVisibilityTimeout = queue.DefaultVisibilityTimeout;
+  self.VisibilityTimeout = queue.VisibilityTimeout;
 }
 
 

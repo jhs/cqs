@@ -15,7 +15,9 @@ var API = { 'Db': couch.Database
           , 'ListQueues' : queue.ListQueues
           , 'SetQueueAttributes': queue.SetAttributes
 
-          , 'Message': message.Message
+          , 'Message'       : message.Message
+          , 'SendMessage'   : message.send
+          , 'ReceiveMessage': message.receive
           }
 
 
