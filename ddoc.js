@@ -61,6 +61,9 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
     if(good_keys.indexOf(key) === -1)
       throw({forbidden: "Invalid field: " + key});
 
+  if(!newDoc.visible_at)
+    throw {forbidden: 'Must set visible_at'};
+
   if(oldDoc) {
     // Checkout ("receive")
     if(newDoc.ReceiverId !== userCtx.name)
