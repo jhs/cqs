@@ -28,12 +28,12 @@ function with_defaults(opts) {
 
     function default_wrapper(given_opts) {
       given_opts = lib.opt_def(given_opts);
-      lib.copy(opts, given_opts);
+      lib.copy(opts, given_opts, function(k) { return !(k in given_opts) });
       arguments[0] = given_opts;
-
       return api_val.apply(this, arguments);
     }
 
+    default_wrapper.prototype = api_val.prototype;
     new_api[name] = default_wrapper;
   })
 
