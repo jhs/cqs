@@ -32,12 +32,13 @@ var TEMPLATE =
 function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   var NAME = "XXX_name_XXX";
 
-  var for_me = XXX_for_me_XXX;
+  var my_msg_id = XXX_my_msg_id_XXX;
 
   if(! /^CQS\//.test(newDoc._id)) // A simple test, hopefully future-proof
     throw({forbidden: "This database is for CQS only"});
 
-  if(! for_me(newDoc))
+  var msg_id = my_msg_id(newDoc); // Message ID is the part within the queue namespace.
+  if(!msg_id)
     return; // Another ddoc will handle this validation.
 
   var good_keys = [ "_id", "_rev", "_revisions"
@@ -53,6 +54,9 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   for (key in newDoc)
     if(good_keys.indexOf(key) === -1)
       throw({forbidden: "Invalid field: " + key});
+
+  if(newDoc.SenderId !== userCtx.name)
+    throw({forbidden: 'Must set SenderId to your name: ' + JSON.stringify(userCtx.name)});
 }
 
 //
@@ -95,7 +99,7 @@ module.exports = { "DDoc" : DDoc
 //
 
 function templated_ddoc(name) {
-  var for_this_ddoc = func_from_template(for_me, {name:name});
+  var for_this_ddoc = func_from_template(my_msg_id, {name:name});
 
   function stringify_functions(obj) {
     var copy = {};
@@ -111,7 +115,7 @@ function templated_ddoc(name) {
     }
 
     else if(typeof obj === 'function')
-      return func_from_template(obj, {name:name, for_me:for_this_ddoc});
+      return func_from_template(obj, {name:name, my_msg_id:for_this_ddoc});
 
     else
       return lib.JDUP(obj);
@@ -134,7 +138,7 @@ function func_from_template(func, vals) {
   return src;
 }
 
-function for_me(doc) {
-  var tester = /^CQS\/XXX_name_XXX\/([a-fA-F0-9]+)$/;
-  return tester.test(doc._id);
+function my_msg_id(doc) {
+  var match = /^CQS\/XXX_name_XXX\/([a-fA-F0-9]+)$/.exec(doc._id);
+  return match && match[1];
 }
