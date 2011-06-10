@@ -111,19 +111,35 @@ function send_message(done) {
 
     // TODO: confirm MD5.
 
-    ; ["MD5OfMessageBody", "MessageId"].forEach(function(key) {
+    ; ["Body", "MD5OfMessageBody", "MessageId"].forEach(function(key) {
       assert.ok(key in msg, "SendMessage result needs key: " + key);
     })
 
+    assert.equal(msg.Body, 'Message one', "Message body should be what was sent");
+
+    state.message_one = msg;
+    done();
+  })
+},
+
+function receive_no_message(done) {
+  state.foo.ReceiveMessage(function(er, messages) {
+    if(er) throw er;
+
+    assert.equal(messages.length, 0, 'Foo queue should not have any messages yet');
     done();
   })
 },
 
 function receive_message(done) {
-  state.foo.ReceiveMessage(function(er, messages) {
+  state.bar.ReceiveMessage(function(er, messages) {
     if(er) throw er;
 
-    assert.equal(messages.length, 0, 'Foo queue should not have any messages yet');
+    assert.equal(messages.length, 1, 'Bar queue should have message from earlier');
+    var msg = messages[0];
+    assert.equal(msg.Body, state.message_one.Body, "Message should be message one's body: " +JSON.stringify(msg));
+    assert.equal(msg.Body, "Messaage one"        , "Message should be message one's body");
+
     done();
   })
 },

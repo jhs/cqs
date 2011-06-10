@@ -20,7 +20,7 @@ function Message (opts) {
   var self = this;
 
   self.MessageId   = opts.MessageId   || opts._id || null;
-  self.MessageBody = opts.MessageBody || null;
+  self.Body        = opts.MessageBody || opts._str || null;
   self.MD5OfMessageBody = null;
   self.queue       = opts.queue       || null;
 
@@ -47,22 +47,15 @@ Message.prototype.send = function send_message(cb) {
       , now = new Date
       ;
 
+    // Unlike SQS, but like CouchDB, message bodies are structured (JSON), not just a string blob.
     var doc = { '_id'          : doc_id
               , 'SenderId'     : sender_id
               , 'SentTimestamp': now
               , 'visible_at'   : now
               , 'ApproximateReceiveCount': 0
               , 'ApproximateFirstReceiveTimestamp': null
+              , 'Body'         : self.Body
               };
-
-    // I am thinking, the "official" message is the binary string blob (maybe base64?); however
-    // as a shortcut, transformed versions can be used instead. The message body is technically
-    // '{"foo":"bar"}' but store it in couch as {"foo":"bar"}. (Perhaps some views can peek into
-    // it or something.)
-    if(typeof self.MessageBody === 'string')
-      doc.body = self.MessageBody;
-    else
-      doc.json = self.MessageBody;
 
     //self.log.debug('PUT\n' + util.inspect(doc));
     db.request({method:'PUT',uri:lib.enc_id(doc._id), json:doc}, function(er, resp, result) {
@@ -75,7 +68,38 @@ Message.prototype.send = function send_message(cb) {
 }
 
 
+function receive(queue, opts, cb) {
+  assert.ok(cb);
+
+  if(typeof opts === 'number')
+    opts = { 'MaxNumberOfMessages': opts };
+
+  queue.confirmed(function(er) {
+    if(er) return cb(er);
+
+    opts.MaxNumberOfMessages = opts.MaxNumberOfMessages || 1;
+    opts.VisibilityTimeout = opts.VisibilityTimeout || queue.DefaultVisibilityTimeout;
+
+    var startkey = lib.JS([ "" ]);
+    var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
+
+    var query = querystring.stringify({ reduce: false
+                                      , limit : opts.MaxNumberOfMessages
+                                      , startkey: startkey
+                                      , endkey: endkey
+                                      });
+    var path = lib.enc_id(queue.ddoc_id) + '/_view/visible_at?' + query;
+    queue.db.request(path, function(er, resp, view) {
+      if(er) return cb(er);
+
+      var messages = view.rows;
+      cb(null, messages);
+    })
+  })
+}
+
 module.exports = { "Message" : Message
+                 , "receive" : receive
                  };
 
 

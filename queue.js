@@ -81,6 +81,8 @@ Queue.prototype.SendMessage = function send_message(opts, cb) {
   var self = this;
 
   self.confirmed(function() {
+    opts = lib.opt_def(opts);
+    lib.copy({couch:self.couch, db:self.db}, opts);
     var msg = new message.Message(opts);
     msg.queue = self;
     msg.send(cb);
@@ -95,31 +97,7 @@ Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
     opts = 1;
   }
 
-  assert.ok(cb);
-
-  if(typeof opts === 'number')
-    opts = { 'MaxNumberOfMessages': opts };
-
-  self.confirmed(function(er) {
-    if(er) return cb(er);
-
-    opts.MaxNumberOfMessages = opts.MaxNumberOfMessages || 1;
-    opts.VisibilityTimeout = opts.VisibilityTimeout || self.DefaultVisibilityTimeout;
-
-    var endkey = [ lib.JS(new Date) ]; // Anything becoming visible up to now.
-
-    var query = querystring.stringify({ reduce: false
-                                      , limit : opts.MaxNumberOfMessages
-                                      , endkey: endkey
-                                      });
-    var path = lib.enc_id(self.ddoc_id) + '/_view/visibility_at?' + query;
-    self.db.request(path, function(er, resp, view) {
-      if(er) return cb(er);
-
-      var messages = view.rows;
-      cb(null, messages);
-    })
-  })
+  message.receive(self, opts, cb);
 }
 
 
