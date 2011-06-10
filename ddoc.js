@@ -40,8 +40,13 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   if(! for_me(newDoc))
     return; // Another ddoc will handle this validation.
 
-  var good_keys = [ "_id", "_rev",
-                  // TODO
+  var good_keys = [ "_id", "_rev", "_revisions"
+                  , 'SenderId'
+                  , 'SentTimestamp'
+                  , 'visible_at'
+                  , 'ApproximateReceiveCount'
+                  , 'ApproximateFirstReceiveTimestamp'
+                  , 'body', 'json'
                   ];
 
   var key;

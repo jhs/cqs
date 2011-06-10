@@ -3,6 +3,7 @@
 //
 
 var COUCH = 'http://localhost:5984';
+//COUCH = 'http://jhs-mac.local:15984';
 var DB    = 'cqs_test';
 
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
@@ -94,11 +95,19 @@ function list_queues_with_prefix(done) {
   })
 },
 
-/*
-function xxsend_message(done) {
-  //cqs.
+function send_message(done) {
+  state.foo.SendMessage('Message one', function(er, msg) {
+    if(er) throw er;
+
+    // TODO: confirm MD5.
+
+    ; ["MD5OfMessageBody", "MessageId"].forEach(function(key) {
+      assert.ok(key in msg, "SendMessage result needs key: " + key);
+    })
+
+    done();
+  })
 },
-*/
 
 ]; // TESTS
 

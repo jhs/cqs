@@ -6,6 +6,7 @@ var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
   , assert = require('assert')
+  , message = require('./message')
   , querystring = require('querystring')
   ;
 
@@ -46,6 +47,15 @@ Queue.prototype.create = function create_queue(cb) {
     if(er) return cb(er);
     return cb(null, self.name);
   })
+}
+
+
+Queue.prototype.SendMessage = function send_message(opts, cb) {
+  var self = this;
+
+  var msg = new message.Message(opts);
+  msg.queue = self;
+  msg.send(cb);
 }
 
 

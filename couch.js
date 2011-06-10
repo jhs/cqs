@@ -32,6 +32,9 @@ function Couch (opts) {
   self.userCtx = opts.userCtx || null;
   self.known_dbs = {};
 
+  self.uuid_pool = [];
+  self.uuid_batch_size = 1000;
+
   self.log = lib.log4js().getLogger('Couch/' + self.url);
   self.log.setLevel(lib.LOG_LEVEL);
 }
@@ -51,6 +54,39 @@ Couch.prototype.request = function(opts, callback) {
     self.log.debug('Request: ' + opts.uri);
     return lib.req_json(opts, callback);
   })
+}
+
+Couch.prototype.uuid = function get_uuid(count, callback) {
+  var self = this;
+  if(typeof count === 'function') {
+    callback = count;
+    count = 1;
+  }
+
+  function attempt_response() {
+    var uuids;
+    if(count <= self.uuid_pool.length) {
+      uuids          = self.uuid_pool.slice(0, count);
+      self.uuid_pool = self.uuid_pool.slice(count + 1);
+
+      if(uuids.length === 1)
+        uuids = uuids[0];
+
+      return callback(null, uuids);
+    }
+
+    self.request('_uuids?count='+self.uuid_batch_size, function(er, resp, result) {
+      if(er)
+        return callback(er);
+      if(!result.uuids || result.uuids.length !== self.uuid_batch_size)
+        return callback(new Error('Unknown _uuids result: ' + lib.JS(result)));
+
+      self.uuid_pool = self.uuid_pool.concat(result.uuids);
+      return attempt_response();
+    })
+  }
+
+  attempt_response();
 }
 
 Couch.prototype.confirmed = function confirm_couch(cb) {
