@@ -64,12 +64,19 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 function visible_at(doc) {
   var NAME = "XXX_name_XXX";
   var my_msg_id = XXX_my_msg_id_XXX;
-  var key, val;
+  var key, val, a;
 
   var msg_id = my_msg_id(doc);
   if(msg_id && doc.visible_at) {
     key = [doc.visible_at];
-    val = 'asdf';
+
+    // The client must be able to check out ("receive") the message using this view data,
+    // which means MVCC stuff and anything else necessary.
+    val = {"_id":doc._id, "_rev":doc._rev};
+    for(a in doc)
+      if(/^[A-Z]/.test(a))
+        val[a] = doc[a];
+
     emit(key, val);
   }
 }

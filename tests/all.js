@@ -137,8 +137,8 @@ function receive_message(done) {
 
     assert.equal(messages.length, 1, 'Bar queue should have message from earlier');
     var msg = messages[0];
-    assert.equal(msg.Body, state.message_one.Body, "Message should be message one's body: " +JSON.stringify(msg));
-    assert.equal(msg.Body, "Messaage one"        , "Message should be message one's body");
+    assert.equal(msg.Body, state.message_one.Body, "Message should be message one's body");
+    assert.equal(msg.Body, 'Message one'         , "Message should be message one's body");
 
     done();
   })

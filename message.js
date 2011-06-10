@@ -19,8 +19,8 @@ var lib = require('./lib')
 function Message (opts) {
   var self = this;
 
-  self.MessageId   = opts.MessageId   || opts._id || null;
-  self.Body        = opts.MessageBody || opts._str || null;
+  self.MessageId   = opts.MessageId   || opts._id  || null;
+  self.Body        = opts.MessageBody || opts.Body || opts._str || null;
   self.MD5OfMessageBody = null;
   self.queue       = opts.queue       || null;
 
@@ -92,7 +92,12 @@ function receive(queue, opts, cb) {
     queue.db.request(path, function(er, resp, view) {
       if(er) return cb(er);
 
-      var messages = view.rows;
+      var messages = view.rows.map(function(row) {
+        var message = new Message(row.value);
+        message.queue = queue;
+        return message;
+      })
+
       cb(null, messages);
     })
   })
