@@ -14,9 +14,13 @@ exports.JP = JSON.parse;
 exports.JS = JSON.stringify;
 exports.JDUP = function(obj) { return JSON.parse(JSON.stringify(obj)) };
 
-exports.copy = function(src, dst) {
+exports.copy = function(src, dst, pred) {
+  pred = pred || function() { return true };
+
   Object.keys(src).forEach(function(key) {
-    dst[key] = src[key];
+    var val = src[key];
+    if(pred(key, val))
+      dst[key] = val;
   })
 }
 
