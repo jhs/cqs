@@ -121,7 +121,7 @@ Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
 }
 
 
-Queue.prototype.SetAttributes = function set_attribs(opts, callback) {
+Queue.prototype.SetAttributes = function set_attrs(opts, callback) {
   var self = this;
   assert.ok(opts);
   assert.ok(callback);
@@ -147,6 +147,36 @@ Queue.prototype.SetAttributes = function set_attribs(opts, callback) {
     })
   })
 }
+
+
+Queue.prototype.GetAttributes = function get_attrs(attrs, callback, extra) {
+  var self = this;
+
+  if(!callback && typeof attrs === 'function') {
+    callback = attrs;
+    attrs = null;
+  }
+
+  var confirmer = function(cb) { return self.confirmed(cb) };
+  if(attrs === '--force') {
+    confirmer = function(cb) { return self.confirmed('--force', cb) };
+    attrs = callback;
+    callback = extra;
+  }
+
+  if(typeof attrs === 'string')
+    attrs = [attrs];
+
+  attrs = attrs || ['all'];
+  assert.ok(Array.isArray(attrs));
+  assert.ok(callback);
+
+  confirmer(function(er) {
+    if(er) return callback(er);
+    callback(null, self);
+  })
+}
+
 
 function create_queue(opts, cb) {
   var queue = new Queue(opts);
@@ -195,15 +225,20 @@ function list_queues(opts, cb) {
 }
 
 
-function set_attributes(queue, attribs, callback) {
-  return queue.SetAttributes(attribs, callback);
+function set_attributes(queue, attrs, callback) {
+  return queue.SetAttributes(attrs, callback);
 }
 
+function get_attributes(opts, attrs, callback, extra) {
+  var queue = (opts instanceof Queue) ? opts : new Queue(opts);
+  return queue.GetAttributes(attrs, callback, extra);
+}
 
 module.exports = { "Queue" : Queue
-                 , "CreateQueue": create_queue
-                 , "ListQueues" : list_queues
-                 , "SetAttributes": set_attributes
+                 , "create": create_queue
+                 , "list"  : list_queues
+                 , "set"   : set_attributes
+                 , "get"   : get_attributes
                  };
 
 

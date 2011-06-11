@@ -203,4 +203,22 @@ function delete_message(done) {
   })
 },
 
+function get_queue_attributes(done) {
+  cqs.GetQueueAttributes('bar', function(er, attrs) {
+    if(er) throw er;
+
+    assert.equal(attrs.VisibilityTimeout, state.bar.VisibilityTimeout, "Should be bar's visibility timeout");
+    assert.equal(attrs.VisibilityTimeout,                         111, "Should be bar's visibility timeout");
+
+    cqs.GetQueueAttributes(state.foo, '--force', ['all'], function(er, attrs) {
+      if(er) throw er;
+
+      assert.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be bar's visibility timeout");
+      assert.equal(attrs.VisibilityTimeout,                         0.5, "Should be bar's visibility timeout");
+
+      done();
+    })
+  })
+},
+
 ] // TESTS
