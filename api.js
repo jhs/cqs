@@ -12,7 +12,7 @@ var API = { 'CreateQueue': queue.create
           , 'ListQueues' : queue.list
           , 'SetQueueAttributes': queue.set
           , 'GetQueueAttributes': queue.get
-          , 'SendMessage'   : message.send
+          , 'SendMessage'   : queue.send
           , 'ReceiveMessage': message.receive
           , 'DeleteMessage' : message.delete
 

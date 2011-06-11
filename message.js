@@ -210,17 +210,12 @@ function receive(queue, opts, cb) {
   })
 }
 
-function send(queue, opts, cb) {
-  return queue.SendMessage(opts, cb);
-}
-
 function delete_message(msg, cb) {
   return msg.delete(cb);
 }
 
 module.exports = { "Message" : Message
                  , "receive" : receive
-                 , "send"    : send
                  , "delete"  : delete_message
                  };
 

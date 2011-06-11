@@ -95,7 +95,7 @@ Queue.prototype.import_ddoc = function(ddoc) {
 }
 
 
-Queue.prototype.SendMessage = function send_message(opts, cb) {
+Queue.prototype.send = function send_message(opts, cb) {
   var self = this;
 
   self.confirmed(function(er) {
@@ -109,7 +109,7 @@ Queue.prototype.SendMessage = function send_message(opts, cb) {
   })
 }
 
-Queue.prototype.ReceiveMessage = function receive_message(opts, cb) {
+Queue.prototype.receive = function receive_message(opts, cb) {
   var self = this;
 
   if(typeof opts === 'function') {
@@ -234,9 +234,15 @@ function get_attributes(opts, attrs, callback, extra) {
   return queue.GetAttributes(attrs, callback, extra);
 }
 
+function send_message(opts, message, callback) {
+  var queue = (opts instanceof Queue) ? opts : new Queue(opts);
+  return queue.send(message, callback);
+}
+
 module.exports = { "Queue" : Queue
                  , "create": create_queue
                  , "list"  : list_queues
+                 , "send"  : send_message
                  , "set"   : set_attributes
                  , "get"   : get_attributes
                  };

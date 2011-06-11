@@ -106,7 +106,7 @@ function list_queues_with_prefix(done) {
 },
 
 function send_message(done) {
-  state.bar.SendMessage('Message one', function(er, msg) {
+  state.bar.send('Message one', function(er, msg) {
     if(er) throw er;
 
     // TODO: confirm MD5.
@@ -132,7 +132,7 @@ function receive_no_message(done) {
 },
 
 function receive_message(done) {
-  state.bar.ReceiveMessage(function(er, messages) {
+  state.bar.receive(function(er, messages) {
     if(er) throw er;
 
     assert.equal(messages.length, 1, 'Bar queue should have message from earlier');
@@ -173,6 +173,35 @@ function make_sure_new_message_has_the_attributes(done) {
 
       state.half_sec = msg;
       done();
+    })
+  })
+},
+
+function send_message_api(done) {
+  cqs.SendMessage('foo', 'API with string arg', function(er) {
+    if(er) throw er;
+    cqs.SendMessage(state.foo, 'API with queue arg', function(er) {
+      if(er) throw er;
+      state.foo.send('queue method call', function(er) {
+        if(er) throw er;
+        done();
+      })
+    })
+  })
+},
+
+function receive_message_api(done) {
+  cqs.ReceiveMessage('foo', function(er, msg) {
+    if(er) throw er;
+    assert.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
+    cqs.ReceiveMessage(state.foo, function(er, msg) {
+      if(er) throw er;
+      assert.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
+      state.foo.receive(function(er, msg) {
+        if(er) throw er;
+        assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
+        done();
+      })
     })
   })
 },
