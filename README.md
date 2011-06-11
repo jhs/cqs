@@ -28,9 +28,8 @@ Initialize the CQS module to point to a database on your couch.
                        , "db"   : "cqs_queue"
                        });
 
-## Queues
+### List Queues
 
-    // List
     cqs.ListQueues(function(err, queues) {
       console.log("Found " + queues.length + " queues:");
       queues.forEach(function(queue) {
@@ -38,24 +37,26 @@ Initialize the CQS module to point to a database on your couch.
       })
 
       /* Output */
-
       // Found 2 queues:
       //   * a_queue
       //   * another_queue
     })
 
-    // Create
+### Create Queues
+
+    // Just create with a name.
     cqs.CreateQueue("important_stuff", function(err, queue) {
       console.log("Important stuff queue is ready");
     })
 
-    // Create with options
+    // Create with an options object.
     var opts = { QueueName               : "unimportant_stuff"
                , DefaultVisibilityTimeout: 3600 // 1 hour
                };
+
     cqs.CreateQueue(opts, function(er, queue) {
       console.log("Created " + queue.name + " with timeout + " queue.VisibilityTimeout);
 
-      // Output:
+      /* Output */
       // Created unimportant_stuff with timeout 3600
     })
