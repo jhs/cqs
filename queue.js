@@ -88,6 +88,7 @@ Queue.prototype.create = function create_queue(callback) {
       files.push('test/browser/test.html');
       files.push('test/browser/require.js');
       files.push('test/browser/boot.js');
+      files.push('test/browser/main.js');
 
       var found = {};
       function on_found(er, file_path, content) {
