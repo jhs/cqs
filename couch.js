@@ -148,8 +148,9 @@ function Database (opts) {
   if(typeof opts.couch !== 'string')
     throw new Error('Required "couch" option with URL of CouchDB');
 
+  opts.db = opts.db || "";
   if(typeof opts.db !== 'string')
-    throw new Error('Required "db" option with db name for queues');
+    throw new Error('Optional "db" option must be string');
 
   self.name   = opts.db;
   self.couch  = new Couch({'url':opts.couch});
@@ -186,7 +187,7 @@ Database.prototype.confirmed = function(cb) {
   self.couch.confirmed(function() {
     var state = self.couch.known_dbs[self.name];
     if(state && state.secObj) {
-      self.log.debug('Confirmation was cached: ' + self.name);
+      self.log.debug('Confirmation was cached: ' + lib.JS(self.name));
       self.secObj = state.secObj;
       return cb();
     }
