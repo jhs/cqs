@@ -25,7 +25,7 @@ var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
 function Queue (opts) {
   var self = this;
 
-  self.name = opts.name || opts._str || null;
+  self.name = opts.name || opts.QueueName || opts._str || null;
   self.db = new couch.Database({'couch':opts.couch, 'db':opts.db});
 
   self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
