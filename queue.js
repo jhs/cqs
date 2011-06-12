@@ -133,7 +133,7 @@ Queue.prototype.receive = function receive_message(opts, cb) {
 }
 
 
-Queue.prototype.SetAttributes = function set_attrs(opts, callback) {
+Queue.prototype.set = function set_attrs(opts, callback) {
   var self = this;
   assert.ok(opts);
   assert.ok(callback);
@@ -146,17 +146,26 @@ Queue.prototype.SetAttributes = function set_attrs(opts, callback) {
     ddoc._rev = self.ddoc_rev;
     lib.copy(opts, ddoc, 'uppercase');
 
-    var req = { method: 'PUT'
-              , uri   : lib.enc_id(ddoc._id)
-              , json  : ddoc
-              }
-    self.db.request(req, function(er, resp, body) {
+    if(self.skip_browser)
+      go();
+    else
+      ddoc.add_browser(go);
+
+    function go(er) {
       if(er) return callback(er);
 
-      // SetAttributes was committed.
-      lib.copy(opts, self, 'uppercase');
-      return callback(null);
-    })
+      var req = { method: 'PUT'
+                , uri   : lib.enc_id(ddoc._id)
+                , json  : ddoc
+                }
+      self.db.request(req, function(er, resp, body) {
+        if(er) return callback(er);
+
+        // SetAttributes was committed.
+        lib.copy(opts, self, 'uppercase');
+        return callback(null);
+      })
+    }
   })
 }
 
@@ -238,7 +247,7 @@ function list_queues(opts, cb) {
 
 
 function set_attributes(queue, attrs, callback) {
-  return queue.SetAttributes(attrs, callback);
+  return queue.set(attrs, callback);
 }
 
 function get_attributes(opts, attrs, callback, extra) {
