@@ -103,13 +103,13 @@ function complete() {
     if(er.expected || er.actual)
       stack = "expected=" + util.inspect(er.expected) + ' actual=' + util.inspect(er.actual) + '\n' + stack;
 
-    console.error(stack);
+    LOG.error(stack);
   })
 
-  console.log('Pass   : ' + count.pass);
-  console.log('Fail   : ' + count.fail);
-  console.log('Timeout: ' + count.timeout);
-  console.log('Skip   : ' + count.skip);
+  LOG.info('Pass   : ' + count.pass);
+  LOG.info('Fail   : ' + count.fail);
+  LOG.info('Timeout: ' + count.timeout);
+  LOG.info('Skip   : ' + count.skip);
 }
 
 exports.run = run;

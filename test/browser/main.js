@@ -1,3 +1,4 @@
+window.process = { env: {} };
 
 define(['events', 'querystring', 'test/run'], function(events, querystring, test_runner) {
   $('#boot').html('Starting');
@@ -8,15 +9,18 @@ define(['events', 'querystring', 'test/run'], function(events, querystring, test
 
   process.stdout = {};
   process.stdout.write = function(x) {
-    var con = $('#con');
+    var con = $('#results');
     var html = con.html();
     con.html(html + x);
   }
 
   process.exit = function(code) {
-    var log = (code === 0) ? console.log : console.error;
-    log("Exit " + code);
+    if(code === 0)
+      console.log("'EXIT' " + code);
+    else
+      console.error("'EXIT' " + code);
   }
+
 
   return function() { // main()
     console.log('Main running');

@@ -4,6 +4,8 @@ define([], function() {
   exports.parse = function(str) {
     var result = {};
 
+    str = str || "";
+    str = str.replace(/^\?/, "");
     if(!str) return result;
 
     var kvs = str.split('&');

@@ -1,17 +1,40 @@
 // log4js stub
 //
 
-define([], function() {
+define(['querystring'], function(querystring) {
   function noop() {};
+  function trace(str) { return console.trace(str) }
+  function log(str) { return console.log(str) }
 
-  var VERBOSE = true;
+  function is_verbose() {
+    return !! querystring.parse(window.location.search).verbose;
+  }
 
-  var noops = { "trace": VERBOSE ? function(X) { return console.trace(X) } : noop
-              , "debug": VERBOSE ? function(X) { return console.log  (X) } : noop
-              , "info" : VERBOSE ? function(X) { return console.info (X) } : noop
-              , "warn" : VERBOSE ? function(X) { return console.warn (X) } : noop
-              , "error": VERBOSE ? function(X) { return console.error(X) } : noop
-              , "fatal": VERBOSE ? function(X) { return console.error(X) } : noop
+  function con(str) {
+    var con = jQuery('#con');
+    var html = con.html();
+    con.html(html + str + "\n");
+  }
+
+  function debug(str) {
+    if(is_verbose())
+      con(str);
+    return console.debug(str)
+  }
+
+  function out(str) {
+    con(str);
+    log(str);
+  }
+
+  var err = out;
+
+  var noops = { "trace": trace
+              , "debug": debug
+              , "info" : out
+              , "warn" : err
+              , "error": err
+              , "fatal": err
 
               , "setLevel": noop
               }
