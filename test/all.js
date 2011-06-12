@@ -216,7 +216,7 @@ function receive_message_api(done) {
 
         var deleted = 0;
         messages.forEach(function(msg) {
-          msg.delete(function() {
+          msg.del(function() {
             deleted += 1;
             if(deleted == 3)
               done();

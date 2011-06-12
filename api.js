@@ -14,7 +14,7 @@ var API = { 'CreateQueue': queue.create
           , 'GetQueueAttributes': queue.get
           , 'SendMessage'   : queue.send
           , 'ReceiveMessage': message.receive
-          , 'DeleteMessage' : message.delete
+          , 'DeleteMessage' : message.del
 
           // Unofficial object API
           , 'Db'     : couch.Database

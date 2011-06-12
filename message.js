@@ -117,7 +117,7 @@ Message.prototype.receive = function receive_message(callback) {
   })
 }
 
-Message.prototype.delete = function delete_message(callback) {
+Message.prototype.del = function delete_message(callback) {
   var self = this;
   assert.ok(callback);
   assert.ok(self.queue);
@@ -211,12 +211,12 @@ function receive(queue, opts, cb) {
 }
 
 function delete_message(msg, cb) {
-  return msg.delete(cb);
+  return msg.del(cb);
 }
 
 module.exports = { "Message" : Message
                  , "receive" : receive
-                 , "delete"  : delete_message
+                 , "del"  : delete_message
                  };
 
 
