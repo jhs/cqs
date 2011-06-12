@@ -22,13 +22,17 @@ var count = { pass: 0
             , timeout: 0
             , fail: 0
             , skip: 0
-            , inc: function(type) {
-                     this[type] += 1
-                     var symbol = type[0].toUpperCase().replace(/P/, '.');
-                     process.stdout.write(symbol);
-                     return run();
-                   }
             }
+
+count.inc = function(type) {
+  this[type] += 1
+  var symbol = type[0].toUpperCase().replace(/P/, '.');
+  process.stdout.write(symbol);
+
+  if(type === 'fail' || type === 'timeout' && process.env.exit)
+    TESTS = [];
+  return run();
+}
 
 var decoration = {};
 TESTS = TESTS.reduce(function(so_far, obj) {
@@ -48,8 +52,10 @@ function run() {
     return complete();
 
   var starts_with_xx = /^xx/.test(test.name);
-  if( XX_MEANS_EXCLUDE ? starts_with_xx : !starts_with_xx )
-    return count.inc('skip');
+  if(test.name !== 'setup') {
+    if( XX_MEANS_EXCLUDE ? starts_with_xx : !starts_with_xx )
+      return count.inc('skip');
+  }
 
   var timeout = test.timeout || 250;
   var start_at = new Date;
@@ -93,7 +99,10 @@ function complete() {
     console.error(stack);
   })
 
-  console.log('Done: pass:' + count.pass + ' fail:' + count.fail + ' timeout:' + count.timeout + ' skip:' + count.skip);
+  console.log('Pass   : ' + count.pass);
+  console.log('Fail   : ' + count.fail);
+  console.log('Timeout: ' + count.timeout);
+  console.log('Skip   : ' + count.skip);
 }
 
 run();
