@@ -6,12 +6,12 @@ define([], function() {
 
   var VERBOSE = true;
 
-  var noops = { "trace": VERBOSE ? console.trace : noop
-              , "debug": VERBOSE ? console.log   : noop
-              , "info" : VERBOSE ? console.info  : noop
-              , "warn" : VERBOSE ? console.warn  : noop
-              , "error": VERBOSE ? console.error : noop
-              , "fatal": VERBOSE ? console.error : noop
+  var noops = { "trace": VERBOSE ? function(a,b,c) { return console.trace(a,b,c) } : noop
+              , "debug": VERBOSE ? function(a,b,c) { return console.log  (a,b,c) } : noop
+              , "info" : VERBOSE ? function(a,b,c) { return console.info (a,b,c) } : noop
+              , "warn" : VERBOSE ? function(a,b,c) { return console.warn (a,b,c) } : noop
+              , "error": VERBOSE ? function(a,b,c) { return console.error(a,b,c) } : noop
+              , "fatal": VERBOSE ? function(a,b,c) { return console.error(a,b,c) } : noop
 
               , "setLevel": noop
               }
