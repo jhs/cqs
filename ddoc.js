@@ -123,11 +123,11 @@ function DDoc (queue) {
   self.CreatedTimestamp = now;
   self.LastModifiedTimestamp = now;
   self.VisibilityTimeout = queue.VisibilityTimeout;
-
-  self.log = lib.log4js().getLogger('ddoc/' + (self.name || 'untitled'));
-  self.log.setLevel(lib.LOG_LEVEL);
 }
 
+// One common logger for them all, just so it won't get stored in couch.
+DDoc.prototype.log = lib.log4js().getLogger('ddoc');
+DDoc.prototype.log.setLevel(lib.LOG_LEVEL);
 
 DDoc.prototype.copy_template = function() {
   var self = this;
