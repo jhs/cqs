@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // The changes_couchdb command-line interface.
 //
 
