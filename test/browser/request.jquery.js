@@ -20,7 +20,7 @@ function request(options, callback) {
   else
     options = JSON.parse(JSON.stringify(options)); // Use a duplicate for mutating.
 
-  if (!options.uri)
+  if (!options.uri && options.uri !== "")
     throw new Error("options.uri is a required argument");
   else if(typeof options.uri != "string")
     throw new Error("options.uri must be a string");
