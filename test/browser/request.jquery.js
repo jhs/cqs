@@ -36,6 +36,10 @@ function request(options, callback) {
   if(options.headers.host)
     throw new Error("Options.headers.host is not supported");
 
+  if(options.json) {
+    options.body = JSON.stringify(options.json);
+    delete options.json;
+  }
   /*
   // Browsers do not like this.
   if(options.body)
