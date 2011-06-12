@@ -60,32 +60,34 @@ function request(options, callback) {
   // Establish a place where the callback arguments will go.
   var result = [];
 
-  var onSuccess = function(data, reason, xhr) {
+  function fix_xhr(xhr) {
     var fixed_xhr = {};
     for (var key in xhr)
       fixed_xhr[key] = xhr[key];
     fixed_xhr.statusCode = xhr.status;
-    result = [null, fixed_xhr, data];
+    return fixed_xhr;
+  }
+
+  var onSuccess = function(data, reason, xhr) {
+    result = [null, fix_xhr(xhr), data];
   }
 
   var onError = function (xhr, reason, er) {
     var body = undefined;
 
-    if(!er) {
-      if(reason == 'timeout') {
-        er = new Error("Request timeout");
-      } else if(reason == 'error') {
-        if(xhr.status > 299 && xhr.responseText.length > 0) {
-          // Looks like HTTP worked, so there is no error as far as request is concerned. Simulate a success scenario.
-          er = null;
-          body = xhr.responseText;
-        }
-      } else {
-        er = new Error("Unknown error; reason = " + reason);
+    if(reason == 'timeout') {
+      er = er || new Error("Request timeout");
+    } else if(reason == 'error') {
+      if(xhr.status > 299 && xhr.responseText.length > 0) {
+        // Looks like HTTP worked, so there is no error as far as request is concerned. Simulate a success scenario.
+        er = null;
+        body = xhr.responseText;
       }
+    } else {
+      er = er || new Error("Unknown error; reason = " + reason);
     }
 
-    result = [er, xhr, body];
+    result = [er, fix_xhr(xhr), body];
   }
 
   var onComplete = function(xhr, reason) {
