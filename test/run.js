@@ -62,6 +62,7 @@ function run() {
   }
 
   var timeout = test.timeout || DEFAULT_TEST_TIMEOUT;
+  timeout *= (test.timeout_coefficient || 1);
   if(require.isBrowser)
     timeout *= BROWSER_TIMEOUT_COEFFICIENT;
 

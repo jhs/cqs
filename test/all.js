@@ -227,7 +227,7 @@ function receive_message_api(done) {
   })
 },
 
-{'timeout': 2000},
+{'timeout_coefficient': 10},
 function delete_message(done) {
   var now = new Date;
   var vis_at = state.half_sec.visible_at;
