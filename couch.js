@@ -28,7 +28,7 @@ var KNOWN_COUCHES = {};
 function Couch (opts) {
   var self = this;
 
-  self.url     = opts.url     || null;
+  self.url     = (typeof opts.url === 'string') ? opts.url : null;
   self.userCtx = opts.userCtx || null;
   self.known_dbs = {};
 
