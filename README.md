@@ -44,6 +44,8 @@ Initialize the CQS module to point to a database on your couch.
 
 ### Create Queues
 
+Creating queues requires **database administrator** access.
+
     // Just create with a name.
     cqs.CreateQueue("important_stuff", function(err, queue) {
       console.log("Important stuff queue is ready");
@@ -60,3 +62,8 @@ Initialize the CQS module to point to a database on your couch.
       /* Output */
       // Created unimportant_stuff with timeout 3600
     })
+
+### Send a Message
+
+    // This is the official API, just like Amazon SQS.
+    cqs.SendMessage(
