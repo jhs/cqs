@@ -1,9 +1,5 @@
-define([], function() {
-  console.log('main define');
-
-  function start() {
-    console.log('started');
+define(['lib'], function(lib) {
+  return function() { // main()
+    console.log('Main running');
   }
-
-  return start;
 })

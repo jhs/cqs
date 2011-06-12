@@ -1,7 +1,9 @@
 // Queue design document
 //
 
-var lib = require('./lib')
+var fs = require('fs')
+  , lib = require('./lib')
+  , path = require('path')
   , util = require('util')
   , assert = require('assert')
   ;
@@ -23,6 +25,7 @@ var TEMPLATE =
 , MessageRetentionPeriod               : 345600
 , QueueArn                             : null
 
+, _attachments: {}
 , views: { "visible_at": { map: visible_at
                          , reduce: '_count'
                          }
@@ -121,6 +124,9 @@ function DDoc (queue) {
   self.CreatedTimestamp = now;
   self.LastModifiedTimestamp = now;
   self.VisibilityTimeout = queue.VisibilityTimeout;
+
+  self.log = lib.log4js().getLogger('ddoc/' + (self.name || 'untitled'));
+  self.log.setLevel(lib.LOG_LEVEL);
 }
 
 
@@ -133,6 +139,83 @@ DDoc.prototype.copy_template = function() {
   var ddoc = templated_ddoc(self.name);
   lib.copy(ddoc, self);
 }
+
+
+// Attach the web browser test suite.
+DDoc.prototype.add_browser = function(callback) {
+  var self = this;
+
+  var home = path.dirname(module.filename)
+    , include_dirs = [ home 
+                     , home + '/test/browser/node'
+                     , home + '/test/browser'
+                     ];
+
+  // Load serially because error handling is simpler.
+  get_dir();
+  function get_dir() {
+    var dir_path = include_dirs.shift();
+    if(!dir_path)
+      return callback();
+
+    self.log.debug('Fetching files from: ' + dir_path);
+    fs.readdir(dir_path, function(er, files) {
+      if(er) return callback(er);
+      self.log.debug('Files: ' + lib.JS(files));
+
+      files = files.filter(function(file) { return /\.js$/.test(file) || /\.html/.test(file) });
+
+      get_file();
+      function get_file() {
+        var filename = files.shift();
+        if(!filename)
+          return get_dir(); // done with this dir
+
+        self.log.debug('Loading file: ' + filename);
+        fs.readFile(dir_path+'/'+filename, null, function(er, content) {
+          if(er && er.errno) er = new Error(er.stack); // Make a better stack trace.
+          if(er) return callback(er);
+
+          var match , require_re = /\brequire\(['"]([\w\d\-_\/\.]+?)['"]\)/g
+            , dependencies = {};
+            ;
+
+          if(dir_path === home) {
+            // Try converting the Node modules to RequireJS on the fly.
+            content = content.toString('utf8');
+            while(match = require_re.exec(content))
+              dependencies[ match[1] ] = true;
+            dependencies = Object.keys(dependencies);
+
+            content = [ 'define(' + lib.JS(dependencies) + ', function() {'
+                      , 'var module = {};'
+                      , 'var exports = {};'
+                      , 'module.exports = exports;'
+                      , ''
+                      , content
+                      , '; return(module.exports);'
+                      , '}); // define'
+                      ].join('\n');
+            content = new Buffer(content);
+          }
+
+          var att = filename.replace(/^.*\//, "");
+          /*
+          var att = filename
+                    .replace(/^test\/browser\/node\//, "")
+                    .replace(/^test\/browser\//, "");
+                    */
+        
+          var type = /\.html$/.test(filename) ? 'text/html; charset=utf-8' : 'application/javascript';
+          self._attachments[att] = { 'content_type':type, 'data':content.toString('base64') };
+
+          get_file();
+        })
+      }
+    })
+  }
+}
+
 
 module.exports = { "DDoc" : DDoc
                  };

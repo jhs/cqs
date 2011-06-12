@@ -73,89 +73,20 @@ Queue.prototype.create = function create_queue(callback) {
   assert.ok(callback);
 
   var ddoc = new queue_ddoc.DDoc(self);
-
-  // Attach the web browser test suite.
-  var fs, path, home;
   if(self.skip_browser)
     go();
-  else {
-    fs = require('fs');
-    path = require('path');
-    home = path.dirname(module.filename);
-    fs.readdir(home, function(er, files) {
-      if(er) return callback(er);
-      files = files.filter(function(file) { return /\.js$/.test(file) })
-      files.push('test/browser/test.html');
-      files.push('test/browser/require.js');
-      files.push('test/browser/boot.js');
-      files.push('test/browser/main.js');
+  else
+    ddoc.add_browser(go);
 
-      var found = {};
-      function on_found(er, file_path, content) {
-        if(er) {
-          found = null;
-          return callback(er);
-        }
+  function go(er) {
+    if(er) return callback(er);
 
-        if(!found)
-          return;
-
-        var attachment_path = file_path
-                              .replace(/^(\w+\.js)$/, "lib/$1")
-                              .replace(/^test\/browser\//, "");
-
-        var match, module_name
-          , require_re = /\brequire\(['"]([\w\d\-_\/\.]+?)['"]\)/g
-          , dependencies = {}
-          ;
-
-        if(/^lib\//.test(attachment_path)) {
-          // Try converting the Node modules to RequireJS on the fly.
-
-          content = content.toString('utf8');
-          while(match = require_re.exec(content)) {
-            module_name = match[1];
-            dependencies[module_name] = true;
-          }
-
-          dependencies = Object.keys(dependencies);
-          content = [ 'define(' + lib.JS(dependencies) + ', function() {'
-                    , 'var module = {};'
-                    , 'var exports = {};'
-                    , 'module.exports = exports;'
-                    , ''
-                    , content
-                    , '; return(module.exports);'
-                    , '}); // define'
-                    ].join('\n');
-          content = new Buffer(content);
-        }
-
-        found[attachment_path] = { data: content.toString('base64')
-                                 , content_type: /\.html$/.test(file_path) ? 'text/html; charset=utf-8' : 'application/javascript'
-                                 }
-
-        if(Object.keys(found).length === files.length) {
-          ddoc._attachments = ddoc._attachments || {};
-          lib.copy(found, ddoc._attachments);
-          go();
-        }
-      }
-
-      files.forEach(function(file) {
-        fs.readFile(file, null, function(er, content) {
-          on_found(er, file, content);
-        })
-      })
-    })
-  }
-
-  function go() {
-    // TODO var html
     var req = { method: 'PUT'
               , uri   : lib.enc_id(ddoc._id)
               , json  : ddoc
               }
+
+    //console.error('Storing\n' + util.inspect(ddoc));
     self.db.request(req, function(er, resp, body) {
       if(er) return callback(er);
 
@@ -166,6 +97,7 @@ Queue.prototype.create = function create_queue(callback) {
     })
   }
 }
+
 
 Queue.prototype.import_ddoc = function(ddoc) {
   var self = this;
