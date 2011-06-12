@@ -19,7 +19,7 @@ define(['querystring'], function(querystring) {
   function debug(str) {
     if(is_verbose())
       con(str);
-    return console.debug(str)
+    return console.debug(str);
   }
 
   function out(str) {

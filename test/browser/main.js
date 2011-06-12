@@ -16,6 +16,11 @@ if(!Array.isArray)
     return Object.prototype.toString.call(o) === '[object Array]';
   }
 
+window.console = window.console || {};
+; ['trace', 'debug', 'log', 'info', 'warn', 'error', 'fatal'].forEach(function(lev) {
+  window.console[lev] = window.console[lev] || function() {};
+})
+
 define(['events', 'querystring', 'test/run'], function(events, querystring, test_runner) {
   $('#boot').html('Starting');
   // Set up some faux Node stuff.

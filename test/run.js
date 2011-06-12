@@ -93,7 +93,12 @@ function run() {
   process.on('uncaughtException', function(er) { return done(er); })
 
   LOG.debug('Test: ' + test.name);
-  test(done);
+  if(! require.isBrowser)
+    test(done);
+  else {
+    try       { test(done) }
+    catch(er) { done(er)   }
+  }
 }
 
 function complete() {
