@@ -49,6 +49,7 @@ function setup(done) {
 // =-=-=-=-=-=-=-=-=
 
 function create_queue(done) {
+  //cqs.CreateQueue('foo', function(er, queue) {
   cqs.CreateQueue('foo', function(er, queue) {
     if(er) return done(er);
     assert.equal(queue.name, 'foo', "CreateQueue returns the queue name");
@@ -195,16 +196,32 @@ function send_message_api(done) {
 },
 
 function receive_message_api(done) {
+  var messages = [];
+
   cqs.ReceiveMessage('foo', function(er, msg) {
     if(er) throw er;
     assert.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
+
+    messages.push(msg[0]);
     cqs.ReceiveMessage(state.foo, function(er, msg) {
       if(er) throw er;
       assert.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
+
+      messages.push(msg[0]);
       state.foo.receive(function(er, msg) {
         if(er) throw er;
         assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
-        done();
+
+        messages.push(msg[0]);
+
+        var deleted = 0;
+        messages.forEach(function(msg) {
+          msg.delete(function() {
+            deleted += 1;
+            if(deleted == 3)
+              done();
+          })
+        })
       })
     })
   })
@@ -223,7 +240,7 @@ function delete_message(done) {
     function check() {
       cqs.ReceiveMessage('foo', function(er, msg) {
         if(er) throw er;
-        assert.equal(msg.length, 0, "Should be no more messages left");
+        assert.equal(msg.length, 0, "Should be no more messages left: " + I(msg));
         done();
       })
     }
@@ -232,7 +249,7 @@ function delete_message(done) {
     if(remaining < 0)
       check();
     else
-      setTimeout(check, remaining + 50);
+      setTimeout(check, remaining * 1.10);
   })
 },
 
