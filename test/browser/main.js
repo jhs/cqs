@@ -1,6 +1,6 @@
 
 define(['events', 'querystring', 'test/run'], function(events, querystring, test_runner) {
-  $('#boot').html('<p>Starting</p><p id="con"></p>');
+  $('#boot').html('Starting');
   // Set up some faux Node stuff.
   var process = window.process = new events.EventEmitter;
 

@@ -15,5 +15,12 @@ define([], function() {
     return result;
   }
 
+  exports.stringify = function(query) {
+    var result = [];
+    for (var k in query)
+      result.push(k + '=' + query[k]);
+    return result.join('&');
+  }
+
   return exports;
 })

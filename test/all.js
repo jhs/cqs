@@ -9,8 +9,8 @@ if(process.env.charles)
   //COUCH = 'http://192.168.3.10:15984';
 
 if(require.isBrowser) {
-  //debugger;
-  COUCH = '';
+  COUCH = window.location.protocol + '//' + window.location.host;
+  DB    = 'cqs_browser_test';
 }
 
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
@@ -149,15 +149,15 @@ function receive_message(done) {
 },
 
 function set_queue_attribs(done) {
-  cqs.SetQueueAttributes(state.foo, {'VisibilityTimeout':0.5}, function(er) {
+  cqs.SetQueueAttributes(state.foo, {'VisibilityTimeout':1.5}, function(er) {
     if(er) throw er;
 
-    assert.equal(state.foo.VisibilityTimeout, 0.5, "Foo should have 0.5 second visibility now");
+    assert.equal(state.foo.VisibilityTimeout, 1.5, "Foo should have 1.5 second visibility now");
     new cqs.Queue('foo').confirmed(function(er, foo2) {
       if(er) throw er;
 
-      assert.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 0.5");
-      assert.equal(foo2.VisibilityTimeout,                         0.5, "Both foos should be 0.5");
+      assert.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 1.5");
+      assert.equal(foo2.VisibilityTimeout,                         1.5, "Both foos should be 1.5");
 
       done();
     })
@@ -165,7 +165,7 @@ function set_queue_attribs(done) {
 },
 
 function make_sure_new_message_has_the_attributes(done) {
-  cqs.SendMessage(state.foo, "Should be 0.5 visibility timeout", function(er) {
+  cqs.SendMessage(state.foo, "Should be 1.5 visibility timeout", function(er) {
     if(er) throw er;
     var now = new Date;
     cqs.ReceiveMessage(state.foo, function(er, msg) {
@@ -173,7 +173,7 @@ function make_sure_new_message_has_the_attributes(done) {
       msg = msg[0];
 
       var invisible_ms = msg.visible_at - now;
-      assert.almost(invisible_ms, 500, "Invisible (should be 500): " + invisible_ms);
+      assert.almost(invisible_ms, 1500, "Not-visible time (should be 1500): " + invisible_ms);
 
       state.half_sec = msg;
       done();
@@ -210,12 +210,12 @@ function receive_message_api(done) {
   })
 },
 
-{'timeout': 1000},
+{'timeout': 2000},
 function delete_message(done) {
   var now = new Date;
   var vis_at = state.half_sec.visible_at;
   assert.ok(vis_at);
-  assert.ok(vis_at - now > 0, "Too late to run this test: " + (now - state.half_sec.visible_at));
+  assert.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
 
   cqs.DeleteMessage(state.half_sec, function(er) {
     if(er) throw er;
@@ -247,7 +247,7 @@ function get_queue_attributes(done) {
       if(er) throw er;
 
       assert.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be bar's visibility timeout");
-      assert.equal(attrs.VisibilityTimeout,                         0.5, "Should be bar's visibility timeout");
+      assert.equal(attrs.VisibilityTimeout,                         1.5, "Should be bar's visibility timeout");
 
       done();
     })

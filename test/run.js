@@ -9,7 +9,11 @@ var lib = require('../lib')
   ;
 
 var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *only* the xx tests.
+var DEFAULT_TEST_TIMEOUT = 250; // ms
+var BROWSER_TIMEOUT_COEFFICIENT = 2.50;
+
 var TESTS = require('./all');
+
 var LOG = lib.log4js().getLogger('tests');
 LOG.setLevel(lib.LOG_LEVEL);
 
@@ -57,7 +61,10 @@ function run() {
       return count.inc('skip');
   }
 
-  var timeout = test.timeout || 250;
+  var timeout = test.timeout || DEFAULT_TEST_TIMEOUT;
+  if(require.isBrowser)
+    timeout *= BROWSER_TIMEOUT_COEFFICIENT;
+
   var start_at = new Date;
   function done(er) {
     if(er === 'timeout') {
@@ -74,7 +81,7 @@ function run() {
     var end_at = new Date;
     var duration = end_at - start_at;
     if(duration > (timeout * 0.80))
-      LOG.warn('Long processing time: ' + test.name);
+      LOG.warn('Long processing time: ' + test.name + ' took ' + duration + 'ms');
 
     return count.inc('pass');
   }
@@ -151,6 +158,6 @@ if(! assert.almost)
   assert.almost = function(actual, expected, message) {
     var delta = Math.abs(actual - expected);
     var margin = delta / expected;
-    if(margin > 0.05)
+    if(margin > 0.10)
       throw new Error(message || "assert.almost");
   }
