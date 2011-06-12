@@ -144,6 +144,11 @@ DDoc.prototype.copy_template = function() {
 DDoc.prototype.add_browser = function(callback) {
   var self = this;
 
+  if(require.isBrowser) {
+    // Browsers installing the browser suite is not supported.
+    return callback();
+  }
+
   var home = path.dirname(module.filename)
     , include_dirs = [ home 
                      , home + '/test'

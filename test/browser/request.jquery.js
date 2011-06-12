@@ -57,7 +57,11 @@ function request(options, callback) {
   var result = [];
 
   var onSuccess = function(data, reason, xhr) {
-    result = [null, xhr, data];
+    var fixed_xhr = {};
+    for (var key in xhr)
+      fixed_xhr[key] = xhr[key];
+    fixed_xhr.statusCode = xhr.status;
+    result = [null, fixed_xhr, data];
   }
 
   var onError = function (xhr, reason, er) {
