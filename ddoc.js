@@ -25,7 +25,6 @@ var TEMPLATE =
 , MessageRetentionPeriod               : 345600
 , QueueArn                             : null
 
-, _attachments: {}
 , views: { "visible_at": { map: visible_at
                          , reduce: '_count'
                          }
@@ -147,23 +146,51 @@ DDoc.prototype.add_browser = function(callback) {
 
   var home = path.dirname(module.filename)
     , include_dirs = [ home 
+                     , home + '/test'
                      , home + '/test/browser/node'
                      , home + '/test/browser'
                      ];
+
+  self._attachments = self._attachments || {};
+  var requirejs_paths = { 'request' : '../request.jquery'
+                        //, 'foo' : 'bar'
+                        };
+
+  function finish() {
+    var opts = { baseUrl: "cqs"
+               , paths  : requirejs_paths
+               }
+    var boot_js = [ 'require('
+                  ,   '// Options'
+                  ,   lib.JS(opts) + ','
+                  ,   ''
+                  ,   '// Modules'
+                  ,   lib.JS(['main.js']) + ','
+                  ,   ''
+                  ,   '// Code to run when ready'
+                  ,   'function(main) { return main(); }'
+                  , ');'
+                  ].join('\n');
+
+    self._attachments['boot.js'] = { content_type: 'application/javascript'
+                                   , data        : new Buffer(boot_js).toString('base64')
+                                   }
+    return callback();
+  }
 
   // Load serially because error handling is simpler.
   get_dir();
   function get_dir() {
     var dir_path = include_dirs.shift();
     if(!dir_path)
-      return callback();
+      return finish();
 
     self.log.debug('Fetching files from: ' + dir_path);
     fs.readdir(dir_path, function(er, files) {
       if(er) return callback(er);
       self.log.debug('Files: ' + lib.JS(files));
 
-      files = files.filter(function(file) { return /\.js$/.test(file) || /\.html/.test(file) });
+      files = files.filter(function(file) { return /\.js$/.test(file) || /\.html$/.test(file) });
 
       get_file();
       function get_file() {
@@ -180,32 +207,50 @@ DDoc.prototype.add_browser = function(callback) {
             , dependencies = {};
             ;
 
-          if(dir_path === home) {
+          if(dir_path === home + '/test' && filename === 'run.js') {
+            // Strip the shebang.
+            content = content.toString('utf8').split(/\n/).map(function(line) {
+              // Replace the line instead of removing it, to keep the line numbers the same.
+              return line.replace(/^(#!.*)$/, '// $1');
+            }).join('\n');
+            content = new Buffer(content);
+          }
+
+          if(dir_path === home || dir_path === home + '/test') {
             // Try converting the Node modules to RequireJS on the fly.
             content = content.toString('utf8');
             while(match = require_re.exec(content))
               dependencies[ match[1] ] = true;
             dependencies = Object.keys(dependencies);
 
-            content = [ 'define(' + lib.JS(dependencies) + ', function() {'
-                      , 'var module = {};'
-                      , 'var exports = {};'
-                      , 'module.exports = exports;'
+            // In order to keep the error message line numbers correct, this makes an ugly final file.
+            content = [ 'require.def(function(require, exports, module) {'
+                      //, 'var module = {};'
+                      //, 'var exports = {};'
+                      //, 'module.exports = exports;'
                       , ''
                       , content
                       , '; return(module.exports);'
                       , '}); // define'
-                      ].join('\n');
+                      ].join('');
             content = new Buffer(content);
           }
 
-          var att = filename.replace(/^.*\//, "");
-          /*
-          var att = filename
-                    .replace(/^test\/browser\/node\//, "")
-                    .replace(/^test\/browser\//, "");
-                    */
-        
+          var att_dir = dir_path.replace(new RegExp('^' + home + '/?'), "");
+
+          if(att_dir == "" || att_dir == 'test/browser/node')
+            att_dir = "cqs/";
+
+          else if(att_dir == 'test')
+            att_dir = 'cqs/test/';
+
+          else if(att_dir == 'test/browser')
+            att_dir = "";
+
+          else
+            return callback(new Error('Unknown directory: ' + att_dir));
+
+          var att = att_dir + filename;
           var type = /\.html$/.test(filename) ? 'text/html; charset=utf-8' : 'application/javascript';
           self._attachments[att] = { 'content_type':type, 'data':content.toString('base64') };
 

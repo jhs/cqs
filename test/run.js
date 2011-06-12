@@ -105,7 +105,9 @@ function complete() {
   console.log('Skip   : ' + count.skip);
 }
 
-run();
+exports.run = run;
+if(require.main === module)
+  run();
 
 //
 // Utilities

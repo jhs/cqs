@@ -16,6 +16,8 @@ define([], function() {
               , "setLevel": noop
               }
 
-  return { 'getLogger': function() { return noops }
-         }
+  return function() {
+    return { 'getLogger': function() { return noops }
+           }
+  }
 })

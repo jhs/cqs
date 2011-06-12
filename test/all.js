@@ -8,6 +8,11 @@ if(process.env.charles)
   COUCH = 'http://jhs-mac.local:15984';
   //COUCH = 'http://192.168.3.10:15984';
 
+if(require.isBrowser) {
+  //debugger;
+  COUCH = '';
+}
+
 var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
   , util = require('util'), I = util.inspect
   , assert = require('assert')
