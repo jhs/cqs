@@ -13,7 +13,7 @@ define(['querystring'], function(querystring) {
   function con(str) {
     var con = jQuery('#con');
     var html = con.html();
-    con.html(html + str + "\n");
+    con.html(html + str + "<br>");
   }
 
   function debug(str) {

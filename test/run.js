@@ -14,6 +14,10 @@ var BROWSER_TIMEOUT_COEFFICIENT = 2.50;
 
 var TESTS = require('./all');
 
+// No idea what's going on but in IE, there is an undefined element at the end of the list.
+while(! TESTS[TESTS.length - 1])
+  TESTS.length = TESTS.length - 1;
+
 var LOG = lib.log4js().getLogger('tests');
 LOG.setLevel(lib.LOG_LEVEL);
 
