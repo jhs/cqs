@@ -78,10 +78,10 @@ var VERBOSE = !!process.env.verbose;
 var noop = function() {};
 var noops = { "trace": noop
             , "debug": VERBOSE ? console.log   : noop
-            , "info" : VERBOSE ? console.info  : noop
-            , "warn" : VERBOSE ? console.warn  : noop
-            , "error": VERBOSE ? console.error : noop
-            , "fatal": VERBOSE ? console.error : noop
+            , "info" : console.info
+            , "warn" : console.warn
+            , "error": console.error
+            , "fatal": console.error
 
             , "setLevel": noop
             }
