@@ -213,15 +213,20 @@ function delete_message(done) {
 },
 
 function send_message_api(done) {
-  cqs.SendMessage('foo', 'API with string arg', function(er) {
+  cqs.CreateQueue({name:'api_tests', DefaultVisibilityTimeout:60}, function(er, api_tests) {
     if(er) throw er;
-    cqs.SendMessage(state.foo, 'API with queue arg', function(er) {
+    state.api_tests = api_tests;
+
+    cqs.SendMessage(api_tests, 'API with string arg', function(er) {
       if(er) throw er;
-      state.foo.send({call_type: 'Method with object body'}, function(er) {
+      cqs.SendMessage(api_tests, 'API with queue arg', function(er) {
         if(er) throw er;
-        state.foo.send('queue method call', function(er) {
+        api_tests.send({call_type: 'Method with object body'}, function(er) {
           if(er) throw er;
-          done();
+          api_tests.send('queue method call', function(er) {
+            if(er) throw er;
+            done();
+          })
         })
       })
     })
@@ -232,25 +237,25 @@ function send_message_api(done) {
 function receive_message_api(done) {
   var messages = [];
 
-  cqs.ReceiveMessage('foo', function(er, msg) {
+  cqs.ReceiveMessage('api_tests', function(er, msg) {
     if(er) throw er;
     assert.equal(msg.length, 1, "Should receive 1 message");
     assert.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
 
     messages.push(msg[0]);
-    cqs.ReceiveMessage(state.foo, 1, function(er, msg) {
+    cqs.ReceiveMessage(state.api_tests, 1, function(er, msg) {
       if(er) throw er;
       assert.equal(msg.length, 1, "Should receive 1 message");
       assert.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
 
       messages.push(msg[0]);
-      cqs.ReceiveMessage({queue:state.foo, 'MaxNumberOfMessages': 1}, function(er, msg) {
+      cqs.ReceiveMessage({queue:state.api_tests, 'MaxNumberOfMessages': 1}, function(er, msg) {
         if(er) throw er;
         assert.equal(msg.length, 1, "Should receive 1 message");
         assert.equal(msg[0].Body.call_type, 'Method with object body', 'Messages should arrive in order');
 
         messages.push(msg[0]);
-        state.foo.receive(1, function(er, msg) {
+        state.api_tests.receive(1, function(er, msg) {
           if(er) throw er;
           assert.equal(msg.length, 1, "Should receive 1 message");
           assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
