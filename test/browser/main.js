@@ -1,5 +1,7 @@
 window.process = { env: {} };
 
+var BANNER = "";
+
 if(!Object.keys)
   Object.keys = function(o){
     if(typeof o !== 'object')
@@ -57,7 +59,7 @@ if(!window.console)
 })
 
 define(['events', 'querystring', 'test/run'], function(events, querystring, test_runner) {
-  jQuery('#boot').html('Starting');
+  jQuery('#boot').html('Starting' + (BANNER ? (' '+BANNER) : ""));
   // Set up some faux Node stuff.
   var process = window.process = new events.EventEmitter;
 
