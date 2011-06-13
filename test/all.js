@@ -300,4 +300,20 @@ function specify_message_id(done) {
   })
 },
 
+function specify_message_oob(done) {
+  var oob = 'some-extra-stuff';
+  cqs.SendMessage('bar', {MessageBody:'Should have extra', Oob:oob}, function(er, sent) {
+    if(er) throw er;
+    assert.equal(sent.Body, 'Should have extra', "Should send the right message");
+
+    cqs.ReceiveMessage(state.bar, function(er, msg) {
+      if(er) throw er;
+      assert.ok(msg[0], "Should receive message");
+      assert.equal(msg[0].Body, 'Should have extra', "Should receive the right message");
+      assert.equal(msg[0].Oob, oob, "Should get the right extra stuff");
+      done();
+    })
+  })
+},
+
 ] // TESTS
