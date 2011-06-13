@@ -20,7 +20,7 @@ define([], function() {
   exports.stringify = function(query) {
     var result = [];
     for (var k in query)
-      result.push(k + '=' + query[k]);
+      result.push(k + '=' + encodeURIComponent(query[k]));
     return result.join('&');
   }
 
