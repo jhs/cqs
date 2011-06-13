@@ -170,7 +170,12 @@ Queue.prototype.receive = function receive_message(opts, callback) {
       }
 
       view.rows.forEach(function(row, i) {
-        var msg_opts = lib.JDUP(row.value);
+        var match = new RegExp('^CQS/' + self.name + '/' + '(.+)$').exec(row.value._id);
+        assert.ok(match, "Bad view row: " + lib.JS(row));
+
+        var msg_opts = {};
+        lib.copy(row.value, msg_opts, 'uppercase');
+        msg_opts.MessageId = match[1];
 
         var msg = new message.Message(msg_opts);
         msg.queue = self;
@@ -313,15 +318,13 @@ function send_message(opts, message, callback) {
       queue = opts.queue
     else
       queue = new Queue({'QueueName':opts.queue, 'couch':opts.couch, 'db':opts.db});
-    delete opts.queue;
   }
   else
     queue = new Queue(opts);
 
   if(!callback && typeof message === 'function') {
     callback = message;
-    message = opts.MessageBody;
-    delete opts.MessageBody;
+    message = {'MessageBody':opts.MessageBody, 'MessageId': opts.MessageId};
   }
 
   return queue.send(message, callback);

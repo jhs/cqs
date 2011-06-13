@@ -316,6 +316,6 @@ function func_from_template(func, vals) {
 }
 
 function my_msg_id(doc) {
-  var match = /^CQS\/XXX_name_XXX\/([a-fA-F0-9]+)$/.exec(doc._id);
+  var match = /^CQS\/XXX_name_XXX\/([\w\-]+)$/.exec(doc._id);
   return match && match[1];
 }

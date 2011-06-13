@@ -284,4 +284,20 @@ function get_queue_attributes(done) {
   })
 },
 
+function specify_message_id(done) {
+  var id = 'qwerty';
+  var body = 'This needs the id "qwerty"';
+  cqs.SendMessage({queue:'foo', MessageBody:body, MessageId:id}, function(er, sent) {
+    if(er) throw er;
+    assert.equal(sent.MessageId, id, "Should get the right ID");
+
+    cqs.ReceiveMessage('foo', function(er, msg) {
+      if(er) throw er;
+      assert.ok(msg[0], "Should receive message");
+      assert.equal(msg[0].MessageId, id, "Should get the right ID");
+      done();
+    })
+  })
+},
+
 ] // TESTS

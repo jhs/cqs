@@ -79,7 +79,7 @@ Message.prototype.receive = function receive_message(callback) {
 
   assert.ok(self.mvcc);
   assert.ok(self.mvcc._id);
-  assert.equal(self.MessageId, self.mvcc._id);
+  assert.ok(new RegExp('/' + self.MessageId + '$').test(self.mvcc._id), lib.JS({_id:self.mvcc._id, ID:self.MessageId}));
   assert.ok('ApproximateReceiveCount'          in self, util.inspect(self));
   assert.ok('ApproximateFirstReceiveTimestamp' in self);
 
