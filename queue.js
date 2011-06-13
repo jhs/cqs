@@ -121,15 +121,64 @@ Queue.prototype.send = function send_message(opts, cb) {
   })
 }
 
-Queue.prototype.receive = function receive_message(opts, cb) {
+Queue.prototype.receive = function receive_message(opts, callback) {
   var self = this;
 
   if(typeof opts === 'function') {
-    cb = opts;
+    callback = opts;
     opts = 1;
   }
 
-  message.receive(self, opts, cb);
+  var msg_count   = opts.MaxNumberOfMessages || 1;
+  var vis_timeout = opts.VisibilityTimeout || self.VisibilityTimeout;
+
+  assert.ok(msg_count > 0  , "Message count is too low");
+  assert.ok(msg_count <= 10, "Message count is too high");
+  assert.ok(vis_timeout >= 0, "Visibility timeout is too low");
+  assert.ok(vis_timeout <= 43200, "Visibility timeout is too high");
+
+  self.confirmed(function(er) {
+    if(er) return callback(er);
+
+    var startkey = lib.JS([ "" ]);
+    var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
+    var query = querystring.stringify({ reduce: false
+                                      , limit : msg_count
+                                      , startkey: startkey
+                                      , endkey: endkey
+                                      });
+    var path = lib.enc_id(self.ddoc_id) + '/_view/visible_at?' + query;
+    self.db.request(path, function(er, resp, view) {
+      if(er) return callback(er);
+
+      if(view.rows.length === 0)
+        return callback(null, []);
+
+      // Don't lose the order CouchDB set for the messages.
+      var messages = [], count = 0;
+      function on_receive(er, pos, msg) {
+        if(er)
+          self.log.error('Receive error', er);
+
+        messages[pos] = msg || null;
+
+        count += 1;
+        if(count === view.rows.length) {
+          messages = messages.filter(function(x) { return !!x });
+          callback(null, messages);
+        }
+      }
+
+      view.rows.forEach(function(row, i) {
+        var msg_opts = lib.JDUP(row.value);
+
+        var msg = new message.Message(msg_opts);
+        msg.queue = self;
+        msg.mvcc = {'_id':row.value._id, '_rev':row.value._rev};
+        msg.receive(function(er) { on_receive(er, i, msg) });
+      })
+    })
+  })
 }
 
 
@@ -256,14 +305,56 @@ function get_attributes(opts, attrs, callback, extra) {
 }
 
 function send_message(opts, message, callback) {
-  var queue = (opts instanceof Queue) ? opts : new Queue(opts);
+  var queue;
+  if(opts instanceof Queue)
+    queue = opts;
+  else if(opts.queue) {
+    if(opts.queue instanceof Queue)
+      queue = opts.queue
+    else
+      queue = new Queue({'QueueName':opts.queue, 'couch':opts.couch, 'db':opts.db});
+    delete opts.queue;
+  }
+  else
+    queue = new Queue(opts);
+
+  if(!callback && typeof message === 'function') {
+    callback = message;
+    message = opts.MessageBody;
+    delete opts.MessageBody;
+  }
+
   return queue.send(message, callback);
+}
+
+function receive_message(opts, callback, extra) {
+  var queue;
+  if(opts instanceof Queue)
+    queue = opts;
+  else if(opts._str || opts.queue) {
+    if(opts.queue instanceof Queue)
+      queue = opts.queue;
+    else
+      queue = new Queue({'QueueName':opts._str || opts.queue, 'couch':opts.couch, 'db':opts.db});
+    delete opts.queue;
+    delete opts._str;
+  } else
+    Queue = new Queue(opts);
+
+  if(typeof callback === 'number' && typeof extra === 'function') {
+    opts= { 'MaxNumberOfMessages': callback };
+    callback = extra;
+  }
+
+  assert.ok(callback);
+  return queue.receive(opts, callback);
 }
 
 module.exports = { "Queue" : Queue
                  , "create": create_queue
                  , "list"  : list_queues
                  , "send"  : send_message
+                 , "receive": receive_message
                  , "set"   : set_attributes
                  , "get"   : get_attributes
                  };

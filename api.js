@@ -13,7 +13,7 @@ var API = { 'CreateQueue': queue.create
           , 'SetQueueAttributes': queue.set
           , 'GetQueueAttributes': queue.get
           , 'SendMessage'   : queue.send
-          , 'ReceiveMessage': message.receive
+          , 'ReceiveMessage': queue.receive
           , 'DeleteMessage' : message.del
 
           // Unofficial object API

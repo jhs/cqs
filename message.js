@@ -87,8 +87,9 @@ Message.prototype.receive = function receive_message(callback) {
     if(er) return callback(er);
 
     var doc = lib.JDUP(self.mvcc);
-    lib.copy(self, doc, function(k) { return /^[A-Z]/.test(k) });
+    lib.copy(self, doc, 'uppercase');
     delete doc.MessageId; // _id is used instead
+    delete doc.VisibilityTimeout;
 
     doc.ReceiverId = self.queue.db.couch.userCtx.name;
     doc.ApproximateReceiveCount += 1;
@@ -151,71 +152,12 @@ Message.prototype.import_doc = function(doc) {
   lib.copy(doc, self, 'uppercase');
 }
 
-function receive(queue, opts, cb) {
-  if(!cb && typeof opts === 'function') {
-    cb = opts;
-    opts = {};
-  }
-
-  assert.ok(cb);
-
-  if(typeof opts === 'number')
-    opts = { 'MaxNumberOfMessages': opts };
-
-  if(queue._str)
-    queue = new (require('./queue').Queue)({couch:queue.couch, db:queue.db, name:queue._str});
-
-  queue.confirmed(function(er) {
-    if(er) return cb(er);
-
-    opts.MaxNumberOfMessages = opts.MaxNumberOfMessages || 1;
-    opts.VisibilityTimeout = opts.VisibilityTimeout || queue.VisibilityTimeout;
-
-    var startkey = lib.JS([ "" ]);
-    var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
-    var query = querystring.stringify({ reduce: false
-                                      , limit : opts.MaxNumberOfMessages
-                                      , startkey: startkey
-                                      , endkey: endkey
-                                      });
-    var path = lib.enc_id(queue.ddoc_id) + '/_view/visible_at?' + query;
-    queue.db.request(path, function(er, resp, view) {
-      if(er) return cb(er);
-
-      if(view.rows.length === 0)
-        return cb(null, []);
-
-      // Don't lose the order CouchDB set for the messages.
-      var messages = [], count = 0;
-      function on_receive(er, pos, msg) {
-        if(er)
-          queue.log.error('Receive error', er);
-
-        messages[pos] = msg || null;
-
-        count += 1;
-        if(count === view.rows.length) {
-          messages = messages.filter(function(x) { return !!x });
-          cb(null, messages);
-        }
-      }
-
-      view.rows.forEach(function(row, i) {
-        var message = new Message(row.value);
-        message.queue = queue;
-        message.mvcc = {'_id':row.value._id, '_rev':row.value._rev};
-        message.receive(function(er) { on_receive(er, i, message) });
-      })
-    })
-  })
-}
 
 function delete_message(msg, cb) {
   return msg.del(cb);
 }
 
 module.exports = { "Message" : Message
-                 , "receive" : receive
                  , "del"  : delete_message
                  };
 

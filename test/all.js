@@ -187,9 +187,12 @@ function send_message_api(done) {
     if(er) throw er;
     cqs.SendMessage(state.foo, 'API with queue arg', function(er) {
       if(er) throw er;
-      state.foo.send('queue method call', function(er) {
+      cqs.SendMessage({MessageBody:'API with object arg', queue:'foo'}, function(er) {
         if(er) throw er;
-        done();
+        state.foo.send('queue method call', function(er) {
+          if(er) throw er;
+          done();
+        })
       })
     })
   })
@@ -200,26 +203,36 @@ function receive_message_api(done) {
 
   cqs.ReceiveMessage('foo', function(er, msg) {
     if(er) throw er;
+    assert.equal(msg.length, 1, "Should receive 1 message");
     assert.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
 
     messages.push(msg[0]);
-    cqs.ReceiveMessage(state.foo, function(er, msg) {
+    cqs.ReceiveMessage(state.foo, 1, function(er, msg) {
       if(er) throw er;
+      assert.equal(msg.length, 1, "Should receive 1 message");
       assert.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
 
       messages.push(msg[0]);
-      state.foo.receive(function(er, msg) {
+      cqs.ReceiveMessage({queue:state.foo, 'MaxNumberOfMessages': 1}, function(er, msg) {
         if(er) throw er;
-        assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
+        assert.equal(msg.length, 1, "Should receive 1 message");
+        assert.equal(msg[0].Body, 'API with object arg', 'Messages should arrive in order');
 
         messages.push(msg[0]);
+        state.foo.receive(1, function(er, msg) {
+          if(er) throw er;
+          assert.equal(msg.length, 1, "Should receive 1 message");
+          assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
 
-        var deleted = 0;
-        messages.forEach(function(msg) {
-          msg.del(function() {
-            deleted += 1;
-            if(deleted == 3)
-              done();
+          messages.push(msg[0]);
+
+          var deleted = 0;
+          messages.forEach(function(msg) {
+            msg.del(function() {
+              deleted += 1;
+              if(deleted == 3)
+                done();
+            })
           })
         })
       })
