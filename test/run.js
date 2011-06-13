@@ -10,7 +10,7 @@ var lib = require('../lib')
 
 var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *only* the xx tests.
 var DEFAULT_TEST_TIMEOUT = 250; // ms
-var BROWSER_TIMEOUT_COEFFICIENT = 2.50;
+var TIMEOUT_COEFFICIENT = 1.0;
 
 var TESTS = require('./all');
 
@@ -67,8 +67,7 @@ function run() {
 
   var timeout = test.timeout || DEFAULT_TEST_TIMEOUT;
   timeout *= (test.timeout_coefficient || 1);
-  if(require.isBrowser)
-    timeout *= BROWSER_TIMEOUT_COEFFICIENT;
+  timeout *= TIMEOUT_COEFFICIENT;
 
   var start_at = new Date;
   function done(er) {
@@ -122,9 +121,9 @@ function complete() {
   LOG.info('Skip   : ' + count.skip);
 }
 
-exports.run = function(timeout_coefficient) {
-  if(timeout_coefficient)
-    BROWSER_TIMEOUT_COEFFICIENT = timeout_coefficient;
+exports.run = function() {
+  if(process.env.timeout_coefficient || process.env.C)
+    TIMEOUT_COEFFICIENT = parseFloat("" + (process.env.timeout_coefficient || process.env.C));
 
   if(require.isBrowser && process.env.synthetic_throw) {
     var events = require('events');
@@ -135,7 +134,7 @@ exports.run = function(timeout_coefficient) {
 }
 
 if(require.main === module)
-  run();
+  exports.run();
 
 //
 // Utilities
