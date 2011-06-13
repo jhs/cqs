@@ -98,12 +98,8 @@ function run() {
   process.on('uncaughtException', function(er) { return done(er); })
 
   LOG.debug('Test: ' + test.name);
-  if(! require.isBrowser)
-    test(done);
-  else {
-    try       { test(done) }
-    catch(er) { done(er)   }
-  }
+  try       { test(done) }
+  catch(er) { done(er)   }
 }
 
 function complete() {
@@ -125,6 +121,7 @@ function complete() {
 exports.run = function(timeout_coefficient) {
   if(timeout_coefficient)
     BROWSER_TIMEOUT_COEFFICIENT = timeout_coefficient;
+
   run();
 }
 
