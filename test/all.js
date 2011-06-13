@@ -186,6 +186,32 @@ function make_sure_new_message_has_the_attributes(done) {
   })
 },
 
+{'timeout_coefficient': 10},
+function delete_message(done) {
+  var now = new Date;
+  var vis_at = state.half_sec.visible_at;
+  assert.ok(vis_at);
+  assert.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
+
+  cqs.DeleteMessage(state.half_sec, function(er) {
+    if(er) throw er;
+
+    function check() {
+      cqs.ReceiveMessage('foo', function(er, msg) {
+        if(er) throw er;
+        assert.equal(msg.length, 0, "Should be no more messages left: " + I(msg));
+        done();
+      })
+    }
+
+    var remaining = vis_at - (new Date);
+    if(remaining < 0)
+      check();
+    else
+      setTimeout(check, remaining * 1.10);
+  })
+},
+
 function send_message_api(done) {
   cqs.SendMessage('foo', 'API with string arg', function(er) {
     if(er) throw er;
@@ -202,6 +228,7 @@ function send_message_api(done) {
   })
 },
 
+{'timeout_coefficient': 2},
 function receive_message_api(done) {
   var messages = [];
 
@@ -241,32 +268,6 @@ function receive_message_api(done) {
         })
       })
     })
-  })
-},
-
-{'timeout_coefficient': 10},
-function delete_message(done) {
-  var now = new Date;
-  var vis_at = state.half_sec.visible_at;
-  assert.ok(vis_at);
-  assert.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
-
-  cqs.DeleteMessage(state.half_sec, function(er) {
-    if(er) throw er;
-
-    function check() {
-      cqs.ReceiveMessage('foo', function(er, msg) {
-        if(er) throw er;
-        assert.equal(msg.length, 0, "Should be no more messages left: " + I(msg));
-        done();
-      })
-    }
-
-    var remaining = vis_at - (new Date);
-    if(remaining < 0)
-      check();
-    else
-      setTimeout(check, remaining * 1.10);
   })
 },
 
