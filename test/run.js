@@ -96,6 +96,10 @@ function run() {
   // This is pretty convenient. Simply throw an error and we'll assume it pertains to this unit test.
   process.removeAllListeners('uncaughtException');
   process.on('uncaughtException', function(er) { return done(er); })
+  if(process.exceptions) {
+    process.exceptions.removeAllListeners('exception');
+    process.exceptions.on('exception', function(er) { return done(er); })
+  }
 
   LOG.debug('Test: ' + test.name);
   try       { test(done) }
@@ -121,6 +125,11 @@ function complete() {
 exports.run = function(timeout_coefficient) {
   if(timeout_coefficient)
     BROWSER_TIMEOUT_COEFFICIENT = timeout_coefficient;
+
+  if(require.isBrowser) {
+    var events = require('events');
+    process.exceptions = new events.EventEmitter;
+  }
 
   run();
 }
