@@ -1,6 +1,6 @@
 # CouchDB Queue Service
 
-CQS is a message queue system, using Apache CouchDB. It is **exactly like [Amazon Simple Queue Service (SQS)][sqs_api]**. The API is the same. Everything is exactly the same, it just runs on CouchDB.
+CQS is a message queue system, using Apache CouchDB. It is **exactly like** [Amazon Simple Queue Service (SQS)][sqs_api]. The API is the same. Everything is exactly the same, it just runs on CouchDB.
 
 CQS is implented in Javascript and supports:
 
@@ -20,7 +20,7 @@ For Node, install with NPM. For browsers, there is no release yet.
 Initialize the CQS module to point to a database on your couch.
 
     // A normal import.
-    var cqs = require('../api');
+    var cqs = require('cqs');
     
     // Pre-apply my couch and db name.
     cqs = cqs.defaults({ "couch": "https://user:password@example.iriscouch.com"
