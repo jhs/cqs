@@ -17,7 +17,7 @@ define([], function() {
   exports.equal = function(a, b, message) {
     var er;
     if(a != b) {
-      er = new Error(message || 'assert.equal');
+      er = new Error((message || 'assert.equal') + ' got=' + JSON.stringify(a) + ' want=' + JSON.stringify(b));
       console.log('Not equal');
       console.log(er);
       thr0w(er);
