@@ -6,14 +6,17 @@ CQS is implented in Javascript and supports:
 
 * NodeJS
 * Google Chrome 12
-* Firefox 3.6, Firefox 4
+* Firefox 3.5, Firefox 3.6, Firefox 4
 * Safari 5
+* Internet Explorer 8, Internet Explorer 9
 
 Use CQS if *you use Javascript*, you know (or appreciate) Amazon SQS, and you *want the same thing on your server*.
 
-For Node, install with NPM. For browsers, there is no release yet.
+For Node, install with NPM.
 
     $ npm install cqs
+
+The Node test suite will copy itself into a Couch app which you can run from the browser.
 
 ## API
 
