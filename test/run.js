@@ -126,7 +126,7 @@ exports.run = function(timeout_coefficient) {
   if(timeout_coefficient)
     BROWSER_TIMEOUT_COEFFICIENT = timeout_coefficient;
 
-  if(require.isBrowser) {
+  if(require.isBrowser && process.env.synthetic_throw) {
     var events = require('events');
     process.exceptions = new events.EventEmitter;
   }
