@@ -16,7 +16,7 @@ For Node, install with NPM.
 
     $ npm install cqs
 
-The Node test suite will copy itself into a Couch app which you can run from the browser.
+The test script `test/run.js` will copy itself into a Couch app which you can run from the browser.
 
 ## API
 
