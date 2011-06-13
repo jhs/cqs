@@ -285,32 +285,18 @@ function get_queue_attributes(done) {
 },
 
 function specify_message_id(done) {
-  var id = 'qwerty';
-  var body = 'This needs the id "qwerty"';
-  cqs.SendMessage({queue:'foo', MessageBody:body, MessageId:id}, function(er, sent) {
+  var extra = 'the-extra-stuff-HERE';
+  var body = {'about':'This needs the extra id', 'I expect':extra};
+  cqs.SendMessage({queue:'foo', MessageBody:body, IdExtra:extra}, function(er, sent) {
     if(er) throw er;
-    assert.equal(sent.MessageId, id, "Should get the right ID");
+    var sent_extra = sent.MessageId.slice(sent.MessageId.length - extra.length);
+    assert.equal(sent_extra, extra, "Send with extra id field: " + extra);
 
     cqs.ReceiveMessage('foo', function(er, msg) {
       if(er) throw er;
-      assert.ok(msg[0], "Should receive message");
-      assert.equal(msg[0].MessageId, id, "Should get the right ID");
-      done();
-    })
-  })
-},
 
-function specify_message_oob(done) {
-  var oob = 'some-extra-stuff';
-  cqs.SendMessage('bar', {MessageBody:'Should have extra', Oob:oob}, function(er, sent) {
-    if(er) throw er;
-    assert.equal(sent.Body, 'Should have extra', "Should send the right message");
-
-    cqs.ReceiveMessage(state.bar, function(er, msg) {
-      if(er) throw er;
-      assert.ok(msg[0], "Should receive message");
-      assert.equal(msg[0].Body, 'Should have extra', "Should receive the right message");
-      assert.equal(msg[0].Oob, oob, "Should get the right extra stuff");
+      var received_extra = msg[0].MessageId.slice(msg[0].MessageId.length - extra.length);
+      assert.equal(received_extra, extra, "Should get the right ID extra: " + extra);
       done();
     })
   })

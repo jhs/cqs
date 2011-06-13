@@ -24,6 +24,7 @@ function Message (opts) {
   self.MessageId   = opts.MessageId   || opts._id  || null;
   self.Body        = opts.MessageBody || opts.Body || opts._str || null;
   self.MD5OfMessageBody = null;
+  self.IdExtra     = opts.IdExtra     || null;
   self.queue       = opts.queue       || null;
 
   self.log = lib.log4js().getLogger('Message/' + (self.MessageId || 'untitled'));
@@ -43,8 +44,11 @@ Message.prototype.send = function send_message(cb) {
   db.couch.uuid(function(er, uuid) {
     if(er) return cb(er);
 
-    self.MessageId = self.MessageId || uuid;
-    var doc_id = 'CQS/' + self.queue.name + '/' + self.MessageId
+    var message_id = self.MessageId || uuid;
+    if(typeof self.IdExtra === 'string')
+      message_id += '/' + self.IdExtra;
+
+    var doc_id = 'CQS/' + self.queue.name + '/' + message_id
       , sender_id = db.couch.userCtx.name
       , now = new Date
       ;
@@ -63,7 +67,10 @@ Message.prototype.send = function send_message(cb) {
     db.request({method:'PUT',uri:lib.enc_id(doc._id), json:doc}, function(er, resp, result) {
       if(er) return cb(er);
 
+      // The send was committed.
+      self.MessageId = message_id;
       // TODO: MD5OfMessageBody
+
       cb(null, self);
     })
   })
@@ -89,6 +96,7 @@ Message.prototype.receive = function receive_message(callback) {
     var doc = lib.JDUP(self.mvcc);
     lib.copy(self, doc, 'uppercase');
     delete doc.MessageId; // _id is used instead
+    delete doc.IdExtra;
     delete doc.VisibilityTimeout;
 
     doc.ReceiverId = self.queue.db.couch.userCtx.name;

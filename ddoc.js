@@ -316,6 +316,15 @@ function func_from_template(func, vals) {
 }
 
 function my_msg_id(doc) {
-  var match = /^CQS\/XXX_name_XXX\/([\w\-]+)$/.exec(doc._id);
-  return match && match[1];
+  var for_me = /^CQS\/XXX_name_XXX\/(.*)$/;
+  var match = for_me.exec(doc._id);
+  if(!match)
+    return null;
+
+  var msg_id = match[1];
+  match = /^([0-9a-f]{32})($|\/(.*)$)/.exec(msg_id);
+  if(!match)
+    throw({forbidden: "Invalid message id: " + msg_id});
+
+  return {'id':match[1], 'extra':match[3]};
 }

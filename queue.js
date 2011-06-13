@@ -324,7 +324,7 @@ function send_message(opts, message, callback) {
 
   if(!callback && typeof message === 'function') {
     callback = message;
-    message = {'MessageBody':opts.MessageBody, 'MessageId': opts.MessageId};
+    message = {'MessageBody':opts.MessageBody, 'IdExtra': opts.IdExtra};
   }
 
   return queue.send(message, callback);
