@@ -81,7 +81,7 @@ define(['events', 'querystring', 'test/run'], function(events, querystring, test
   return function() { // main()
     console.log('Main running');
 
-    try       { test_runner.run() }
+    try       { test_runner.run(process.env.timeout_coefficient || process.env.C) }
     catch(er) { console.log("Error starting tests"); console.log(er) }
   }
 })

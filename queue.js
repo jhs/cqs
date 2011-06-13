@@ -107,17 +107,26 @@ Queue.prototype.import_ddoc = function(ddoc) {
 }
 
 
-Queue.prototype.send = function send_message(opts, cb) {
+Queue.prototype.send = function send_message(opts, extra, callback) {
   var self = this;
 
+  if(!callback && typeof extra === 'function') {
+    callback = extra;
+    extra = null;
+  }
+
   self.confirmed(function(er) {
-    if(er) return cb(er);
+    if(er) return callback(er);
 
     opts = lib.opt_def(opts);
-    lib.copy({couch:self.couch, db:self.db}, opts);
-    var msg = new message.Message(opts);
-    msg.queue = self;
-    msg.send(cb);
+    var body = opts._str || opts;
+    var msg = new message.Message({ 'couch'  : self.couch
+                                  , 'db'     : self.db
+                                  , 'queue'  : self
+                                  , 'IdExtra': extra
+                                  , 'Body'   : body
+                                  });
+    msg.send(callback);
   })
 }
 
@@ -309,7 +318,7 @@ function get_attributes(opts, attrs, callback, extra) {
   return queue.GetAttributes(attrs, callback, extra);
 }
 
-function send_message(opts, message, callback) {
+function send_message(opts, message, extra, callback) {
   var queue;
   if(opts instanceof Queue)
     queue = opts;
@@ -322,12 +331,12 @@ function send_message(opts, message, callback) {
   else
     queue = new Queue(opts);
 
-  if(!callback && typeof message === 'function') {
-    callback = message;
-    message = {'MessageBody':opts.MessageBody, 'IdExtra': opts.IdExtra};
+  if(!callback && typeof extra === 'function') {
+    callback = extra;
+    extra = null;
   }
 
-  return queue.send(message, callback);
+  return queue.send(message, extra, callback);
 }
 
 function receive_message(opts, callback, extra) {

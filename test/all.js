@@ -111,7 +111,7 @@ function list_queues_with_prefix(done) {
 },
 
 function send_message(done) {
-  state.bar.send('Message one', function(er, msg) {
+  state.bar.send({this_is:'Message one'}, function(er, msg) {
     if(er) throw er;
 
     // TODO: confirm MD5.
@@ -120,7 +120,7 @@ function send_message(done) {
       assert.ok(key in msg, "SendMessage result needs key: " + key);
     })
 
-    assert.equal(msg.Body, 'Message one', "Message body should be what was sent");
+    assert.equal(msg.Body.this_is, 'Message one', "Message body should be what was sent");
 
     state.message_one = msg;
     done();
@@ -142,8 +142,8 @@ function receive_message(done) {
 
     assert.equal(messages.length, 1, 'Bar queue should have message from earlier');
     var msg = messages[0];
-    assert.equal(msg.Body, state.message_one.Body, "Message should be message one's body");
-    assert.equal(msg.Body, 'Message one'         , "Message should be message one's body");
+    assert.equal(msg.Body.this_is, state.message_one.Body.this_is, "Message should be message one's body");
+    assert.equal(msg.Body.this_is, 'Message one'                 , "Message should be message one's body");
 
     done();
   })
@@ -187,7 +187,7 @@ function send_message_api(done) {
     if(er) throw er;
     cqs.SendMessage(state.foo, 'API with queue arg', function(er) {
       if(er) throw er;
-      cqs.SendMessage({MessageBody:'API with object arg', queue:'foo'}, function(er) {
+      state.foo.send({call_type: 'Method with object body'}, function(er) {
         if(er) throw er;
         state.foo.send('queue method call', function(er) {
           if(er) throw er;
@@ -216,7 +216,7 @@ function receive_message_api(done) {
       cqs.ReceiveMessage({queue:state.foo, 'MaxNumberOfMessages': 1}, function(er, msg) {
         if(er) throw er;
         assert.equal(msg.length, 1, "Should receive 1 message");
-        assert.equal(msg[0].Body, 'API with object arg', 'Messages should arrive in order');
+        assert.equal(msg[0].Body.call_type, 'Method with object body', 'Messages should arrive in order');
 
         messages.push(msg[0]);
         state.foo.receive(1, function(er, msg) {
@@ -287,7 +287,7 @@ function get_queue_attributes(done) {
 function specify_message_id(done) {
   var extra = 'the-extra-stuff-HERE';
   var body = {'about':'This needs the extra id', 'I expect':extra};
-  cqs.SendMessage({queue:'foo', MessageBody:body, IdExtra:extra}, function(er, sent) {
+  cqs.SendMessage('foo', body, extra, function(er, sent) {
     if(er) throw er;
     var sent_extra = sent.MessageId.slice(sent.MessageId.length - extra.length);
     assert.equal(sent_extra, extra, "Send with extra id field: " + extra);

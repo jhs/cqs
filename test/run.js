@@ -122,7 +122,12 @@ function complete() {
   LOG.info('Skip   : ' + count.skip);
 }
 
-exports.run = run;
+exports.run = function(timeout_coefficient) {
+  if(timeout_coefficient)
+    BROWSER_TIMEOUT_COEFFICIENT = timeout_coefficient;
+  run();
+}
+
 if(require.main === module)
   run();
 
