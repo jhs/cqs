@@ -54,6 +54,7 @@ function create_queue(done) {
     if(er) return done(er);
     assert.equal(queue.name, 'foo', "CreateQueue returns the queue name");
     state.foo = queue;
+    state.log = state.foo.log;
     done();
   })
 },
@@ -168,12 +169,15 @@ function set_queue_attribs(done) {
 function make_sure_new_message_has_the_attributes(done) {
   cqs.SendMessage(state.foo, "Should be 1.5 visibility timeout", function(er) {
     if(er) throw er;
-    var now = new Date;
+    var before = new Date;
     cqs.ReceiveMessage(state.foo, function(er, msg) {
       if(er) throw er;
+
+      var now = new Date;
+      var query_ms = now - before;
       msg = msg[0];
 
-      var invisible_ms = msg.visible_at - now;
+      var invisible_ms = (msg.visible_at - now) + (query_ms / 2);
       assert.almost(invisible_ms, 1500, "Not-visible time (should be 1500): " + invisible_ms);
 
       state.half_sec = msg;
