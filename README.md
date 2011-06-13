@@ -10,7 +10,7 @@ CQS is implented in Javascript and supports:
 * Safari 5
 * Internet Explorer 8, Internet Explorer 9
 
-Use CQS if *you use Javascript*, you know (or appreciate) Amazon SQS, and you *want the same thing on your server*.
+Use CQS if you use Javascript, you know (or appreciate) Amazon SQS, and you *want the same thing on your server*.
 
 For Node, install with NPM.
 
