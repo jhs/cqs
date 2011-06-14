@@ -75,13 +75,13 @@ function run() {
     var duration = end_at - start_at;
 
     if(er === 'timeout') {
-      errors.push(new Error('Timeout (' + (duration / 1000) + 's) : ' + test.name));
+      errors.push({test:test, er:new Error('Timeout (' + (duration / 1000) + 's) : ' + test.name)});
       return count.inc('timeout');
     }
 
     clearTimeout(test.timer);
     if(er) {
-      errors.push(er);
+      errors.push({test:test, er:er});
       return count.inc('fail');
     }
 
@@ -108,12 +108,15 @@ function run() {
 
 function complete() {
   process.stdout.write('\n\n');
-  errors.forEach(function(er) {
+  errors.forEach(function(result) {
+    var test = result.test, er = result.er;
     var stack = er.stack;
     if(er.expected || er.actual)
       stack = "expected=" + util.inspect(er.expected) + ' actual=' + util.inspect(er.actual) + '\n' + stack;
 
+    LOG.error("Test: " + test.name);
     LOG.error(stack);
+    LOG.error("");
   })
 
   LOG.info('Pass   : ' + count.pass);
