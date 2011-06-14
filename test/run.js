@@ -71,8 +71,11 @@ function run() {
 
   var start_at = new Date;
   function done(er) {
+    var end_at = new Date;
+    var duration = end_at - start_at;
+
     if(er === 'timeout') {
-      errors.push(new Error('Timeout: ' + test.name));
+      errors.push(new Error('Timeout (' + (duration / 1000) + 's) : ' + test.name));
       return count.inc('timeout');
     }
 
@@ -82,8 +85,6 @@ function run() {
       return count.inc('fail');
     }
 
-    var end_at = new Date;
-    var duration = end_at - start_at;
     if(duration > (timeout * 0.80))
       LOG.warn('Long processing time: ' + test.name + ' took ' + duration + 'ms');
 
