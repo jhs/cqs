@@ -38,6 +38,8 @@ exports.req_json = function req_json(opts, callback) {
   if(typeof opts === 'string')
     opts = {'uri':opts};
 
+  var couch_errors_are_ok = !! opts.couch_errors;
+
   opts.headers = opts.headers || {};
   opts.headers['accept']       = 'application/json';
   opts.headers['content-type'] = 'application/json';
@@ -62,7 +64,8 @@ exports.req_json = function req_json(opts, callback) {
       return callback(er);
 
     if(resp.statusCode < 200 || resp.statusCode >= 300)
-      return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
+      if(! couch_errors_are_ok)
+        return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
 
     var obj;
     try           { obj = JSON.parse(body) }
