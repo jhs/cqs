@@ -20,6 +20,7 @@ var lib = require('./lib')
 //
 
 var KNOWN_COUCHES = {};
+var UUIDS         = [];
 
 //
 // API
@@ -34,7 +35,6 @@ function Couch (opts) {
 
   self.known_dbs = {};
 
-  self.uuid_pool = [];
   self.uuid_batch_size = 1000;
 
   self.log = lib.log4js().getLogger('Couch/' + self.url);
@@ -69,9 +69,9 @@ Couch.prototype.uuid = function get_uuid(count, callback) {
 
   function attempt_response() {
     var uuids;
-    if(count <= self.uuid_pool.length) {
-      uuids          = self.uuid_pool.slice(0, count);
-      self.uuid_pool = self.uuid_pool.slice(count + 1);
+    if(count <= UUIDS.length) {
+      uuids = UUIDS.slice(0, count);
+      UUIDS = UUIDS.slice(count + 1);
 
       if(uuids.length === 1)
         uuids = uuids[0];
@@ -85,7 +85,7 @@ Couch.prototype.uuid = function get_uuid(count, callback) {
       if(!result.uuids || result.uuids.length !== self.uuid_batch_size)
         return callback(new Error('Unknown _uuids result: ' + lib.JS(result)));
 
-      self.uuid_pool = self.uuid_pool.concat(result.uuids);
+      UUIDS = UUIDS.concat(result.uuids);
       return attempt_response();
     })
   }
