@@ -66,7 +66,7 @@ function run() {
   }
 
   var timeout = test.timeout || DEFAULT_TEST_TIMEOUT;
-  timeout *= (test.timeout_coefficient || 1);
+  timeout *= (test.timeout_coefficient || test.time_C || 1);
   timeout *= TIMEOUT_COEFFICIENT;
 
   var start_at = new Date;
