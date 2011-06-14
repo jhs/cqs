@@ -42,10 +42,16 @@ exports.req_json = function req_json(opts, callback) {
   opts.headers['accept']       = 'application/json';
   opts.headers['content-type'] = 'application/json';
 
-  var timed_out = false, timer = setTimeout(on_timeout, opts.timeout || 5000);
+  var started_at = new Date;
+  var timer_ms = (opts.timeout || 5000) * (opts.time_C || 1.0);
+  delete opts.time_C;
+
+  //console.log('Request timeout will be: ' + timer_ms);
+  var timed_out = false, timer = setTimeout(on_timeout, timer_ms);
   function on_timeout() {
     timed_out = true;
-    callback(new Error('Timeout: ' + opts.uri));
+    var duration = (new Date) - started_at;
+    callback(new Error('Request timeout (' + (duration/1000) + 's) : ' + opts.uri));
   }
 
   function on_req_done(er, resp, body) {
