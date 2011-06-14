@@ -1,8 +1,8 @@
 // The changes_couchdb command-line interface.
 //
 
-var COUCH = 'http://localhost:5984';
-var DB    = 'cqs_test';
+var COUCH = process.env.cqs_couch || 'http://localhost:5984';
+var DB    = process.env.cqs_db    || 'cqs_test';
 
 if(process.env.charles)
   COUCH = 'http://jhs-mac.local:15984';
@@ -13,7 +13,8 @@ if(require.isBrowser) {
   DB    = 'cqs_browser_test';
 }
 
-var cqs = require('../api').defaults({'couch':COUCH, 'db':DB})
+var time_C = parseFloat("" + (process.env.timeout_coefficient || process.env.C || 1.0));
+var cqs = require('../api').defaults({'couch':COUCH, 'db':DB, 'time_C':time_C})
   , util = require('util'), I = util.inspect
   , assert = require('assert')
   , request = require('request')

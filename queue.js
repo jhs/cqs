@@ -26,7 +26,7 @@ function Queue (opts) {
   var self = this;
 
   self.name = opts.name || opts.QueueName || opts._str || null;
-  self.db = new couch.Database({'couch':opts.couch, 'db':opts.db});
+  self.db = new couch.Database({'couch':opts.couch, 'db':opts.db, time_C:opts.time_C});
 
   self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 

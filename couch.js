@@ -30,6 +30,8 @@ function Couch (opts) {
 
   self.url     = (typeof opts.url === 'string') ? opts.url : null;
   self.userCtx = opts.userCtx || null;
+  self.time_C  = opts.time_C  || null;
+
   self.known_dbs = {};
 
   self.uuid_pool = [];
@@ -47,6 +49,7 @@ Couch.prototype.request = function(opts, callback) {
   if(typeof opts === 'string')
     opts = {'uri':opts};
   opts.uri = self.url + '/' + opts.uri;
+  opts.time_C = opts.time_C || self.time_C;
 
   self.confirmed(function(er) {
     if(er) return callback(er);
@@ -114,15 +117,16 @@ Couch.prototype.confirmed = function confirm_couch(cb) {
 
     function emit(er, resp) { state.emit('done', er, resp) }
 
+    // Don't use self.request because that calls confirmed().
     self.log.debug('Confirming Couch: ' + self.url);
-    lib.req_json(self.url, function(er, resp, body) {
+    lib.req_json({uri:self.url, time_C:self.time_C}, function(er, resp, body) {
       if(er) return emit(er);
 
       if(body.couchdb !== 'Welcome')
         return emit(new Error('Bad CouchDB response from ' + self.url));
 
       self.log.debug('Confirming session');
-      lib.req_json(self.url+'/_session', function(er, resp, session) {
+      lib.req_json({uri:self.url+'/_session', time_C:self.time_C}, function(er, resp, session) {
         if(er) return emit(er);
 
         if(!session.userCtx)
@@ -153,7 +157,7 @@ function Database (opts) {
     throw new Error('Optional "db" option must be string');
 
   self.name   = opts.db;
-  self.couch  = new Couch({'url':opts.couch});
+  self.couch  = new Couch({'url':opts.couch, time_C:opts.time_C});
   self.secObj = null;
 
   self.log = lib.log4js().getLogger('DB/' + self.name);
