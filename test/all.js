@@ -314,4 +314,34 @@ function specify_message_id(done) {
   })
 },
 
+function check_message_deletion(done) {
+  state.foo.send('to be kept', function(er) {
+    if(er) throw er;
+    state.foo.send('to be deleted', function(er) {
+      if(er) throw er;
+
+      state.foo.receive(2, function(er, msgs) {
+        if(er) throw er;
+        assert.equal(msgs.length, 2, "Should get both messages");
+
+        var to_keep = msgs[0], to_del = msgs[1];
+        to_del.del(function(er) {
+          if(er) throw er;
+          to_keep.update(function(er) {
+            if(er) throw er;
+            assert.ok(! to_keep.deleted, "Kept message should not be deleted");
+            to_del.update(function(er) {
+              if(er) throw er;
+              assert.ok(to_del.deleted, "Other message should be deleted");
+              to_keep.del(function() {
+                done();
+              })
+            })
+          })
+        })
+      })
+    })
+  })
+},
+
 ] // TESTS

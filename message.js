@@ -77,6 +77,33 @@ Message.prototype.send = function send_message(cb) {
 }
 
 
+Message.prototype.update = function update_message(callback) {
+  var self = this;
+  assert.ok(callback)
+  assert.ok(callback);
+  assert.ok(self.queue);
+  assert.ok(self.queue.db);
+
+  var doc_id = lib.enc_id('CQS/' + self.queue.name + '/' + self.MessageId);
+  self.queue.db.request({'uri':doc_id, 'couch_errors':true}, function(er, resp, doc) {
+    if(er)
+      return callback(er);
+
+    var key;
+    if(resp.statusCode === 200)
+      lib.copy(doc, self, 'uppercase');
+    else {
+      // This message was deleted;
+      for (key in self)
+        if(/^[A-Z]/.test(key))
+          delete self[key];
+      self.deleted = true;
+    }
+
+    return callback(null, self);
+  })
+}
+
 Message.prototype.receive = function receive_message(callback) {
   var self = this;
   assert.ok(callback);
