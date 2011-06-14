@@ -139,6 +139,9 @@ Queue.prototype.receive = function receive_message(opts, callback) {
     opts = 1;
   }
 
+  if(typeof opts === 'number')
+    opts = {'MaxNumberOfMessages': opts};
+
   var msg_count   = opts.MaxNumberOfMessages || 1;
   var vis_timeout = opts.VisibilityTimeout || self.VisibilityTimeout;
 
