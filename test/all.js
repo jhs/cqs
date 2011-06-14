@@ -212,6 +212,7 @@ function delete_message(done) {
   })
 },
 
+{'timeout_coefficient': 2},
 function send_message_api(done) {
   cqs.CreateQueue({name:'api_tests', DefaultVisibilityTimeout:60}, function(er, api_tests) {
     if(er) throw er;
