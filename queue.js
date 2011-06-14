@@ -26,7 +26,8 @@ function Queue (opts) {
   var self = this;
 
   self.name = opts.name || opts.QueueName || opts._str || null;
-  self.db = new couch.Database({'couch':opts.couch, 'db':opts.db, time_C:opts.time_C});
+  self.time_C = opts.time_C || null;
+  self.db = new couch.Database({'couch':opts.couch, 'db':opts.db, time_C:self.time_C});
 
   self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
@@ -293,13 +294,14 @@ function list_queues(opts, cb) {
 
   var db_url = opts.couch + '/' + opts.db;
   var view = db_url + '/_all_docs?' + querystring.stringify(query);
-  lib.req_json(view, function(er, resp, view) {
+  lib.req_json({uri:view, time_C:opts.time_C}, function(er, resp, view) {
     if(er) return cb(er);
 
     function get_queue(row) {
       return new Queue({ couch: opts.couch
                        , db   : opts.db
                        , name : id_to_name(row.id)
+                       , time_C: opts.time_C
                        })
     }
 
