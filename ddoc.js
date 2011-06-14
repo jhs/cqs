@@ -31,9 +31,13 @@ var TEMPLATE =
          }
 
 , "validate_doc_update": validate_doc_update
+
+// Utilities
+, "is_list_equal": is_list_equal
 }
 
 function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
+  var ddoc = this;
   var NAME = "XXX_name_XXX";
 
   var my_msg_id = XXX_my_msg_id_XXX;
@@ -327,4 +331,20 @@ function my_msg_id(doc) {
     throw({forbidden: "Invalid message id: " + msg_id});
 
   return {'id':match[1], 'extra':match[3]};
+}
+
+function is_list_equal(a, b) {
+  if(a.length !== b.length)
+    return false;
+
+  var i, result;
+  for(i = 0; i < a.length; i++) {
+    if(Array.isArray(a[i]) && Array.isArray(b[i]))
+      result = is_list_equal(a[i], b[i]);
+    else
+      result = (a[i] === b[i]);
+    if(! result)
+      return false;
+  }
+  return true;
 }
