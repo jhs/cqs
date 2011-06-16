@@ -45,6 +45,9 @@ exports.req_json = function req_json(opts, callback) {
   opts.headers['accept']       = 'application/json';
   opts.headers['content-type'] = 'application/json';
 
+  if(!('followRedirect' in opts))
+    opts.followRedirect = false;
+
   var started_at = new Date;
   var timer_ms = (opts.timeout || 5000) * (opts.time_C || 1.0);
   delete opts.time_C;
