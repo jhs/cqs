@@ -20,7 +20,8 @@ var lib = require('./lib')
 //
 
 var KNOWN_COUCHES = {};
-var UUIDS         = [];
+var UUIDS         = {}; // Map couch URLs to UUID pools.
+var UUID_BATCH_SIZE = 100;
 
 //
 // API
@@ -34,8 +35,6 @@ function Couch (opts) {
   self.time_C  = opts.time_C  || null;
 
   self.known_dbs = {};
-
-  self.uuid_batch_size = 1000;
 
   self.log = lib.log4js().getLogger('Couch/' + self.url);
   self.log.setLevel(lib.LOG_LEVEL);
@@ -67,30 +66,8 @@ Couch.prototype.uuid = function get_uuid(count, callback) {
     count = 1;
   }
 
-  function attempt_response() {
-    var uuids;
-    if(count <= UUIDS.length) {
-      uuids = UUIDS.slice(0, count);
-      UUIDS = UUIDS.slice(count + 1);
-
-      if(uuids.length === 1)
-        uuids = uuids[0];
-
-      return callback(null, uuids);
-    }
-
-    self.request('_uuids?count='+self.uuid_batch_size, function(er, resp, result) {
-      if(er)
-        return callback(er);
-      if(!result.uuids || result.uuids.length !== self.uuid_batch_size)
-        return callback(new Error('Unknown _uuids result: ' + lib.JS(result)));
-
-      UUIDS = UUIDS.concat(result.uuids);
-      return attempt_response();
-    })
-  }
-
-  attempt_response();
+  var uuids = uuids_for(self);
+  return uuids.get(count, callback);
 }
 
 Couch.prototype.confirmed = function confirm_couch(cb) {
@@ -235,3 +212,58 @@ module.exports = { "Database" : Database
 //
 // Utilities
 //
+
+function uuids_for(couch) {
+  if(UUIDS[couch.url])
+    return UUIDS[couch.url];
+
+  var getter = UUIDS[couch.url] = new events.EventEmitter;
+  getter.couch = couch;
+  getter.pool = [];
+  getter.fetching = false;
+
+  getter.get = function(count, callback) {
+    var self = this;
+    var response;
+
+    if(count <= self.pool.length) {
+      // Just send back the UUIDs.
+      response  = self.pool.slice(0, count);
+      self.pool = self.pool.slice(count + 1);
+
+      if(response.length === 1)
+        response = response[0];
+
+      return callback(null, response);
+    } else {
+      // Fetch some more.
+      self.fetch();
+      self.on('error', function(er) { callback(er) });
+      self.on('batch', function() {
+        // A new batch came in. Re-run.
+        return self.get(count, callback);
+      })
+    }
+  }
+
+  getter.fetch = function() {
+    var self = this;
+    if(self.fetching)
+      return;
+
+    self.fetching = true;
+    self.couch.request('_uuids?count='+UUID_BATCH_SIZE, function(er, resp, result) {
+      self.fetching = false;
+      if(er)
+        return self.emit('error', er);
+
+      if(!result.uuids || result.uuids.length !== UUID_BATCH_SIZE)
+        return self.emit('error', new Error('Unknown _uuids result: ' + lib.JS(result)));
+
+      self.pool = self.pool.concat(result.uuids);
+      self.emit('batch');
+    })
+  }
+
+  return getter;
+}
