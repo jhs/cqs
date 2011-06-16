@@ -70,12 +70,16 @@ function create_queue_with_obj(done) {
   })
 },
 
-function instantiate_queue_loads_from_couch(done) {
+function instantiate_queue_loads_from_cache(done) {
   var should_be_bar = new cqs.Queue('bar');
+  var start_at = new Date;
   should_be_bar.confirm(function(er) {
     if(er) throw er;
+    var end_at = new Date;
+
     assert.equal(should_be_bar.VisibilityTimeout, 111, "Should get bar's visibility timeout");
     assert.equal(should_be_bar.VisibilityTimeout, state.bar.VisibilityTimeout, "Should get bar's visibility timeout");
+    assert.ok(end_at - start_at < 20, "Bar should be known from cache within 50ms");
     done();
   })
 },
