@@ -70,56 +70,53 @@ Couch.prototype.uuid = function get_uuid(count, callback) {
   return uuids.get(count, callback);
 }
 
-Couch.prototype.confirmed = function confirm_couch(cb) {
+Couch.prototype.confirmed = function confirm_couch(callback) {
   var self = this;
-  assert.ok(cb);
+  assert.ok(callback);
   assert.ok(self.url);
 
   if(self.userCtx && self.known_dbs)
-    return cb();
+    return callback();
 
-  var state = KNOWN_COUCHES[self.url];
+  var confirmer = KNOWN_COUCHES[self.url];
+  if(!confirmer)
+    confirmer = KNOWN_COUCHES[self.url] = new lib.Once;
 
-  if(state && state.userCtx && state.known_dbs) {
-    self.log.debug('Confirmation was cached: ' + self.url);
-    self.userCtx = state.userCtx;
-    self.known_dbs = state.known_dbs;
-    return cb();
+  confirmer.on_done(function(er, userCtx, known_dbs) {
+    if(er)
+      return callback(er);
+
+    self.userCtx = userCtx;
+    self.known_dbs = known_dbs;
+    return callback();
+  })
+
+  // Don't use self.request because that calls confirmed().
+  function req(uri, cb) {
+    return lib.req_json({'uri':uri, 'time_C':self.time_C}, cb);
   }
 
-  if(!state) {
-    state = KNOWN_COUCHES[self.url] = new events.EventEmitter;
-    state.known_dbs = self.known_dbs;
-    self.log.debug('Initialized known_dbs for ' + self.url);
-
-    function emit(er, resp) { state.emit('done', er, resp) }
-
-    // Don't use self.request because that calls confirmed().
+  confirmer.job(function(done) {
     self.log.debug('Confirming Couch: ' + self.url);
-    lib.req_json({uri:self.url, time_C:self.time_C}, function(er, resp, body) {
-      if(er) return emit(er);
+
+    req(self.url, function(er, resp, body) {
+      if(er) return done(er);
 
       if(body.couchdb !== 'Welcome')
-        return emit(new Error('Bad CouchDB response from ' + self.url));
+        return done(new Error('Bad CouchDB response from ' + self.url));
 
       self.log.debug('Confirming session');
-      lib.req_json({uri:self.url+'/_session', time_C:self.time_C}, function(er, resp, session) {
-        if(er) return emit(er);
+      req(self.url + '/_session', function(er, resp, session) {
+        if(er) return done(er);
 
         if(!session.userCtx)
-          return emit(new Error('Bad CouchDB response from ' + session_url));
-        self.log.debug('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
+          return done(new Error('Bad CouchDB response: ' + self.url + '/_session'));
 
-        //self.log.debug('Calling back: ' + util.inspect(session.userCtx));
-        state.userCtx = session.userCtx;
-        return emit(null);
+        self.log.debug('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
+        var known_dbs = [];
+        return done(null, session.userCtx, known_dbs);
       })
     })
-  }
-
-  state.on('done', function(er, userCtx) {
-    if(er) return cb(er);
-    cb();
   })
 }
 
