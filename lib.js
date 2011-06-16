@@ -2,6 +2,7 @@
 //
 
 var request = require('request')
+  , events = require('events')
   ;
 
 exports.LOG_LEVEL = process.env.cqs_log_level || "info";
@@ -102,4 +103,48 @@ try {
     return { 'getLogger': function() { return noops }
            }
   }
+}
+
+
+//
+// A simple run-once tool
+//
+
+exports.Once = Once;
+function Once () {
+  var self = this;
+
+  self.task    = null;
+  self.is_done = false;
+  self.pending = null;
+  self.result  = undefined;
+}
+
+Once.prototype.on_done = function(callback) {
+  var self = this;
+
+  if(self.is_done)
+    return callback.apply(null, self.result);
+
+  self.pending = self.pending || new events.EventEmitter;
+  self.pending.on('done', callback);
+}
+
+Once.prototype.job = function(task) {
+  var self = this;
+
+  // Only the first .job() call does anything.
+  if(self.task)
+    return;
+  self.task = task;
+
+  self.pending = self.pending || new events.EventEmitter;
+
+  function on_done() {
+    self.is_done = true;
+    self.result = Array.prototype.slice.call(arguments);
+    self.pending.emit.apply(self.pending, ['done'].concat(self.result));
+  }
+
+  task(on_done);
 }
