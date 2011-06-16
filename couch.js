@@ -154,52 +154,44 @@ Database.prototype.request = function(opts, callback) {
 }
 
 
-Database.prototype.confirmed = function(cb) {
+Database.prototype.confirmed = function(callback) {
   var self = this;
-  assert.ok(cb);
+  assert.ok(callback);
   assert.ok(self.couch);
 
-  if(self.secObj)
-    return cb();
-
   self.couch.confirmed(function() {
-    var state = self.couch.known_dbs[self.name];
-    if(state && state.secObj) {
-      self.log.debug('Confirmation was cached: ' + lib.JS(self.name));
-      self.secObj = state.secObj;
-      return cb();
-    }
+    var confirmer = self.couch.known_dbs[self.name];
+    if(!confirmer)
+      confirmer = self.couch.known_dbs[self.name] = new lib.Once;
 
-    if(!state) {
-      state = self.couch.known_dbs[self.name] = new events.EventEmitter;
-      function emit(er, resp) { state.emit('done', er, resp) }
-
-      self.log.debug('Confirming DB: ' + self.name);
-      self.couch.request(self.name, function(er, resp, db) {
-        if(er) return emit(er);
-
-        if(db.db_name !== self.name)
-          return emit(new Error('Expected DB name "'+self.name+'": ' + db.db_name));
-
-        self.log.debug('Checking _security: ' + self.name);
-        self.couch.request(self.name+'/_security', function(er, resp, secObj) {
-          if(er) return emit(er);
-
-          if(!secObj)
-            return emit(new Error('Bad _security response from ' + self.name + ': ' + lib.JS(secObj)));
-
-          self.log.debug('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
-          state.secObj = secObj;
-          return emit(null);
-        })
-      })
-    }
-
-    state.on('done', function(er, secObj) {
-      if(er) return cb(er);
-      return cb();
+    confirmer.on_done(function(secObj) {
+      self.secObj = secObj;
+      callback();
     })
+
+    confirmer.job(confirm_db);
   })
+
+  function confirm_db(done) {
+    self.log.debug('Confirming DB: ' + self.name);
+    self.couch.request(self.name, function(er, resp, db) {
+      if(er) return done(er);
+
+      if(db.db_name !== self.name)
+        return done(new Error('Expected DB name "'+self.name+'": ' + db.db_name));
+
+      self.log.debug('Checking _security: ' + self.name);
+      self.couch.request(self.name+'/_security', function(er, resp, secObj) {
+        if(er) return done(er);
+
+        if(!secObj)
+          return done(new Error('Bad _security response from ' + self.name + ': ' + lib.JS(secObj)));
+
+        self.log.debug('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
+        return done(null, secObj);
+      })
+    })
+  }
 }
 
 module.exports = { "Database" : Database
