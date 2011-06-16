@@ -30,7 +30,6 @@ function Queue (opts) {
 
   self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
-  self.is_confirmed = false;
   self.cache_confirmation = true;
 
   self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
@@ -70,8 +69,8 @@ Queue.prototype.confirmed = function after_confirmed(opt, callback) {
   })
 
   function confirm_queue(done) {
-    self.log.debug('Confirming queue: ' + self.name);
     var doc_id = new queue_ddoc.DDoc(self)._id;
+    self.log.debug('Confirming queue: ' + doc_id);
     self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
       done(er, ddoc);
     })
@@ -101,8 +100,9 @@ Queue.prototype.create = function create_queue(callback) {
       if(er) return callback(er);
 
       // Consider myself confirmed as well.
+      self.db.known_queues[self.name] = new lib.Once;
+      self.db.known_queues[self.name].job(function(done) { done(null, ddoc) });
       self.import_ddoc(ddoc);
-      self.is_confirmed = true;
       return callback(null, self.name);
     })
   }
@@ -215,6 +215,7 @@ Queue.prototype.set = function set_attrs(opts, callback) {
   assert.ok(callback);
   assert.equal(typeof opts, 'object');
 
+  self.log.debug('Set attributes: ' + self.name);
   self.confirmed('--force', function(er) {
     if(er) return callback(er);
 
@@ -237,8 +238,10 @@ Queue.prototype.set = function set_attrs(opts, callback) {
       self.db.request(req, function(er, resp, body) {
         if(er) return callback(er);
 
-        // SetAttributes was committed.
-        lib.copy(opts, self, 'uppercase');
+        // SetAttributes was committed, consider myself confirmed as well.
+        self.db.known_queues[self.name] = new lib.Once;
+        self.db.known_queues[self.name].job(function(done) { done(null, ddoc) });
+        self.import_ddoc(ddoc);
         return callback(null);
       })
     }
@@ -268,6 +271,7 @@ Queue.prototype.GetAttributes = function get_attrs(attrs, callback, extra) {
   assert.ok(Array.isArray(attrs));
   assert.ok(callback);
 
+  self.log.debug('Get attributes: ' + self.name);
   confirmer(function(er) {
     if(er) return callback(er);
     callback(null, self);
