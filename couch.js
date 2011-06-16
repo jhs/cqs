@@ -33,8 +33,7 @@ function Couch (opts) {
   self.url     = (typeof opts.url === 'string') ? opts.url : null;
   self.userCtx = opts.userCtx || null;
   self.time_C  = opts.time_C  || null;
-
-  self.known_dbs = {};
+  self.known_dbs = null;
 
   self.log = lib.log4js().getLogger('Couch/' + self.url);
   self.log.setLevel(lib.LOG_LEVEL);
@@ -113,7 +112,7 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
           return done(new Error('Bad CouchDB response: ' + self.url + '/_session'));
 
         self.log.debug('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
-        var known_dbs = [];
+        var known_dbs = {};
         return done(null, session.userCtx, known_dbs);
       })
     })
@@ -133,6 +132,7 @@ function Database (opts) {
   self.name   = opts.db;
   self.couch  = new Couch({'url':opts.couch, time_C:opts.time_C});
   self.secObj = null;
+  self.known_queues = null;
 
   self.log = lib.log4js().getLogger('DB/' + self.name);
   self.log.setLevel(process.env.cqs_log_level || "info");
@@ -164,8 +164,12 @@ Database.prototype.confirmed = function(callback) {
     if(!confirmer)
       confirmer = self.couch.known_dbs[self.name] = new lib.Once;
 
-    confirmer.on_done(function(secObj) {
+    confirmer.on_done(function(er, secObj, known_queues) {
+      if(er)
+        return callback(er);
+
       self.secObj = secObj;
+      self.known_queues = known_queues;
       callback();
     })
 
@@ -188,7 +192,8 @@ Database.prototype.confirmed = function(callback) {
           return done(new Error('Bad _security response from ' + self.name + ': ' + lib.JS(secObj)));
 
         self.log.debug('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
-        return done(null, secObj);
+        var known_queues = {};
+        return done(null, secObj, known_queues);
       })
     })
   }

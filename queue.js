@@ -5,7 +5,6 @@ var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
   , assert = require('assert')
-  , events = require('events')
   , message = require('./message')
   , queue_ddoc = require('./ddoc')
   , querystring = require('querystring')
@@ -39,34 +38,44 @@ function Queue (opts) {
 }
 
 Queue.prototype.confirm =
-Queue.prototype.confirmed = function after_confirmed(opt, cb) {
+Queue.prototype.confirmed = function after_confirmed(opt, callback) {
   var self = this;
 
-  if(!cb && typeof opt === 'function') {
-    cb = opt;
+  if(!callback && typeof opt === 'function') {
+    callback = opt;
     opt = '';
   }
 
-  assert.ok(cb);
+  assert.ok(callback);
+  assert.ok(self.db);
 
-  if(opt === '--force' || self.cache_confirmation === false) {
-    self.log.debug('Clearing cache: ' + self.name);
-    self.is_confirmed = false;
-  }
+  self.db.confirmed(function(er) {
+    if(er)
+      return callback(er);
 
-  if(self.is_confirmed)
-    return cb(null, self);
+    var confirmer = self.db.known_queues[self.name];
+    if(!confirmer || opt === '--force' || !self.cache_confirmation)
+      confirmer = self.db.known_queues[self.name] = new lib.Once;
 
-  self.log.debug('Confirming queue: ' + self.name);
-  var doc_id = new queue_ddoc.DDoc(self)._id;
-  self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
-    if(er) return cb(er);
+    confirmer.on_done(function(er, ddoc) {
+      if(er)
+        return callback(er);
 
-    // Otherwise, copy all attributes from the API.
-    self.import_ddoc(ddoc);
-    self.is_confirmed = true;
-    cb(null, self);
+      // Copy all attributes from the API.
+      self.import_ddoc(ddoc);
+      return callback(null, self);
+    })
+
+    confirmer.job(confirm_queue);
   })
+
+  function confirm_queue(done) {
+    self.log.debug('Confirming queue: ' + self.name);
+    var doc_id = new queue_ddoc.DDoc(self)._id;
+    self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
+      done(er, ddoc);
+    })
+  }
 }
 
 Queue.prototype.create = function create_queue(callback) {
