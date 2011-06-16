@@ -57,7 +57,7 @@ Queue.prototype.confirmed = function after_confirmed(opt, cb) {
   if(self.is_confirmed)
     return cb(null, self);
 
-  self.log.debug('Confirming: ' + self.name);
+  self.log.debug('Confirming queue: ' + self.name);
   var doc_id = new queue_ddoc.DDoc(self)._id;
   self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
     if(er) return cb(er);
