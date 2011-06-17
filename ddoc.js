@@ -52,6 +52,7 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   var good_keys = [ "_id", "_rev", "_revisions", "_deleted"
                   , 'SenderId'
                   , 'SentTimestamp'
+                  , 'visible_at'
                   , 'ApproximateReceiveCount'
                   , 'ApproximateFirstReceiveTimestamp'
                   , 'MD5OfMessageBody'
@@ -59,8 +60,6 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 
                   // Some extensions
                   , 'ReceiverId'
-                  , 'visible_at'
-                  , 'finished_at'
                   ];
 
   var key;
@@ -69,18 +68,14 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
       throw({forbidden: "Invalid field: " + key});
 
   if(newDoc._deleted) {
-    throw {forbidden: 'Only DB admin can delete (within CQS, to delete, set "finished_at")'};
-    //if(oldDoc.ReceiverId !== userCtx.name)
-    //  throw {forbidden: 'You may not delete this document'};
+    if(oldDoc.ReceiverId !== userCtx.name)
+      throw {forbidden: 'You may not delete this document'};
 
     return;
   }
 
-  if(newDoc.visible_at && newDoc.finished_at)
-    throw {forbidden: 'Only visible_at or finished_at allowed'};
-
-  if(!newDoc.visible_at && !newDoc.finished_at)
-    throw {forbidden: 'Must set visible_at or finished_at'};
+  if(!newDoc.visible_at)
+    throw {forbidden: 'Must set visible_at'};
 
   if(oldDoc) {
     // Checkout ("receive")
@@ -98,9 +93,6 @@ function visible_at(doc) {
   var NAME = "XXX_name_XXX";
   var my_msg_id = XXX_my_msg_id_XXX;
   var key, val, a;
-
-  if(doc.finished_at)
-    return;
 
   var msg_id = my_msg_id(doc);
   if(msg_id && doc.visible_at) {

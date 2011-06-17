@@ -258,20 +258,19 @@ Message.prototype.del = function message_del(callback) {
   try        { self.assert_received() }
   catch (er) { return callback(er)    }
 
-  self.mvcc = {'_id': self.ReceiptHandle._id, '_rev': self.ReceiptHandle._rev};
-  var doc = self.make_doc();
-  doc.finished_at = new Date;
-
-  var path = lib.enc_id(doc._id)
-  self.queue.db.request({method:'PUT', uri:path, json:doc}, function(er, resp, result) {
+  var id = self.ReceiptHandle._id;
+  var req = { method: 'DELETE'
+            , uri   : lib.enc_id(id) + '?rev=' + self.ReceiptHandle._rev
+            , headers: {'content-type': 'application/json'}
+            }
+  self.queue.db.request(req, function(er, resp, result) {
     // Note: delete always returns success.
     if(er)
-      self.log.info('Failed to delete ' + path + ': ' + er.message);
+      self.log.info('Failed to delete ' + id + ': ' + er.message);
 
     if(result.ok !== true)
       self.log.info('Unknown response to delete' + lib.JS(result));
 
-    self.deleted = true;
     Object.keys(self).forEach(function (key) {
       if(/^[A-Z]/.test(key))
         delete self[key];
