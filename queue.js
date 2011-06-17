@@ -117,7 +117,7 @@ Queue.prototype.import_ddoc = function(ddoc) {
 }
 
 
-Queue.prototype.send = function send_message(opts, extra, callback) {
+Queue.prototype.send = function(opts, extra, callback) {
   var self = this;
 
   if(!callback && typeof extra === 'function') {
@@ -140,7 +140,7 @@ Queue.prototype.send = function send_message(opts, extra, callback) {
   })
 }
 
-Queue.prototype.receive = function receive_message(opts, callback) {
+Queue.prototype.receive = function(opts, callback) {
   var self = this;
 
   if(typeof opts === 'function') {
