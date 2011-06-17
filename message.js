@@ -28,6 +28,7 @@ function Message (opts) {
   self.MD5OfMessageBody = null;
   self.IdExtra     = opts.IdExtra     || null;
   self.queue       = opts.queue       || null;
+  self.is_heartbeat= opts.is_heartbeat|| false;
 
   self.log = lib.log4js().getLogger('Message/' + (self.MessageId || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
@@ -192,7 +193,7 @@ Message.prototype.reset = function(doc, new_visible_at) {
     , warning_interval_ms, a, warner
     ;
 
-  if(new_visible_at) {
+  if(new_visible_at && self.is_heartbeat) {
     for(a = 1; a <= 12; a++) {
       warning_interval_ms = receipt_ms * (a / 12);
       warner = setTimeout(on_warn, warning_interval_ms);
