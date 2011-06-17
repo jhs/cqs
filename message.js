@@ -4,6 +4,7 @@
 var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
+  , events = require('events')
   , assert = require('assert')
   , querystring = require('querystring')
   ;
@@ -18,6 +19,7 @@ var lib = require('./lib')
 
 function Message (opts) {
   var self = this;
+  events.EventEmitter.call(self);
 
   lib.copy(opts, self, 'uppercase');
 
@@ -30,6 +32,8 @@ function Message (opts) {
   self.log = lib.log4js().getLogger('Message/' + (self.MessageId || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
 }
+util.inherits(Message, events.EventEmitter);
+
 
 Message.prototype.assert_received = function assert_received() {
   var self = this;
@@ -120,6 +124,7 @@ Message.prototype.update = function update_message(callback) {
       self.deleted = true;
     }
 
+    // TODO: Detect if visible_at changed and update the alerts.
     return callback(null, self);
   })
 }
@@ -159,13 +164,22 @@ Message.prototype.receive = function receive_message(callback) {
         return callback(new Error('Bad doc update result: ' + lib.JS(result)));
 
       // Receive was a success.
-      delete self.mvcc;
-      self.import_doc(doc);
-      self.visible_at = visible_at;
-      self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
+      doc._rev = result.rev;
+      self.reset(doc, visible_at);
       callback(null, self);
     })
   })
+}
+
+Message.prototype.reset = function(doc, new_visible_at) {
+  var self = this;
+
+  if(doc && new_visible_at) {
+    delete self.mvcc;
+    self.import_doc(doc);
+    self.visible_at = new_visible_at;
+    self.ReceiptHandle = {'_id':doc._id, '_rev':doc._rev};
+  }
 }
 
 Message.prototype.visibility =
@@ -203,10 +217,8 @@ Message.prototype.change_visibility = function (new_time, callback) {
       return callback(new Error('Bad doc update result: ' + lib.JS(result)));
 
     // Update was a success.
-    delete self.mvcc;
-    self.import_doc(doc);
-    self.visible_at = new_time;
-    self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
+    doc._rev = result.rev;
+    self.reset(doc, new_time);
     callback(null, self);
   })
 }
@@ -235,6 +247,8 @@ Message.prototype.del = function message_del(callback) {
       if(/^[A-Z]/.test(key))
         delete self[key];
     })
+
+    self.reset();
     return callback(null, self);
   })
 }
