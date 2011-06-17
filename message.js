@@ -31,6 +31,26 @@ function Message (opts) {
   self.log.setLevel(lib.LOG_LEVEL);
 }
 
+Message.prototype.assert_received = function assert_received() {
+  var self = this;
+  assert.ok(self.queue        , 'Message not usable (no queue)');
+  assert.ok(self.queue.db     , 'Message not usable (no queue db)');
+  assert.ok(self.ReceiptHandle, 'Message not usable (no ReceiptHandle)');
+}
+
+Message.prototype.make_doc = function() {
+  var self = this;
+
+  var doc = lib.JDUP(self.mvcc || {});
+  lib.copy(self, doc, 'uppercase');
+  delete doc.MessageId; // _id is used instead
+  delete doc.IdExtra;
+  delete doc.VisibilityTimeout;
+  delete doc.ReceiptHandle;
+
+  return doc;
+}
+
 
 Message.prototype.send = function send_message(cb) {
   var self = this;
@@ -120,12 +140,7 @@ Message.prototype.receive = function receive_message(callback) {
   self.queue.confirmed(function(er) {
     if(er) return callback(er);
 
-    var doc = lib.JDUP(self.mvcc);
-    lib.copy(self, doc, 'uppercase');
-    delete doc.MessageId; // _id is used instead
-    delete doc.IdExtra;
-    delete doc.VisibilityTimeout;
-
+    var doc = self.make_doc();
     doc.ReceiverId = self.queue.db.couch.userCtx.name;
     doc.ApproximateReceiveCount += 1;
     if(doc.ApproximateFirstReceiveTimestamp === null)
@@ -133,7 +148,7 @@ Message.prototype.receive = function receive_message(callback) {
 
     var timeout = self.VisibilityTimeout || self.queue.VisibilityTimeout;
     var visible_at = new Date;
-    visible_at.setMilliseconds(visible_at.getMilliseconds() + (timeout * 1000));
+    visible_at.setUTCMilliseconds(visible_at.getUTCMilliseconds() + (timeout * 1000));
     doc.visible_at = visible_at;
 
     var path = lib.enc_id(doc._id)
@@ -153,12 +168,54 @@ Message.prototype.receive = function receive_message(callback) {
   })
 }
 
-Message.prototype.del = function delete_message(callback) {
+Message.prototype.change_visibility = function (new_time, callback) {
   var self = this;
+
   assert.ok(callback);
-  assert.ok(self.queue);
-  assert.ok(self.queue.db);
-  assert.ok(self.ReceiptHandle, "Must have a ReceiptHandle to delete");
+  try        { self.assert_received() }
+  catch (er) { return callback(er)    }
+
+  var delta_ms, now = new Date;
+
+  if(typeof new_time === 'number') {
+    // Caller requests now + the given seconds.
+    delta_ms = new_time * 1000;
+    new_time = new Date;
+    new_time.setUTCMilliseconds(new_time.getUTCMilliseconds() + delta_ms);
+  } else {
+    delta_ms = new_time - now;
+    if(ms_delta < 0)
+      return callback(new Error('Requested change ' + lib.JS(new_time) + ' is too late'));
+    if(ms_delta < 2000)
+      return callback(new Error('Requested change ' + lib.JS(new_time) + ' is less than 2s from now'));
+  }
+
+  self.mvcc = {'_id': self.ReceiptHandle._id, '_rev': self.ReceiptHandle._rev};
+  var doc = self.make_doc();
+  doc.visible_at = new_time;
+
+  var path = lib.enc_id(doc._id)
+  self.queue.db.request({method:'PUT', uri:path, json:doc}, function(er, resp, result) {
+    if(er) return callback(er);
+
+    if(result.ok !== true)
+      return callback(new Error('Bad doc update result: ' + lib.JS(result)));
+
+    // Update was a success.
+    delete self.mvcc;
+    self.import_doc(doc);
+    self.visible_at = new_time;
+    self.ReceiptHandle = {'_id':result.id, '_rev':result.rev};
+    callback(null, self);
+  })
+}
+
+Message.prototype.del = function message_del(callback) {
+  var self = this;
+
+  assert.ok(callback);
+  try        { self.assert_received() }
+  catch (er) { return callback(er)    }
 
   var id = self.ReceiptHandle._id;
   var req = { method: 'DELETE'
@@ -188,12 +245,27 @@ Message.prototype.import_doc = function(doc) {
 }
 
 
+function change_visibility(opts, VisibilityTimeout, callback) {
+  var message;
+  if(opts instanceof Message)
+    message = opts;
+  else if(opts.ReceiptHandle)
+    return callback(new Error('ReceiptHandle is unsupported, use "Message" instead with message object'));
+  else if(opts.Message || opts.message)
+    message = opts.Message || opts.message;
+  else
+    return callback(new Error('Unknown options: ' + lib.JS(opts)));
+
+  return message.change_visibility(VisibilityTimeout, callback);
+}
+
 function delete_message(msg, cb) {
   return msg.del(cb);
 }
 
 module.exports = { "Message" : Message
-                 , "del"  : delete_message
+                 , "change_visibility"  : change_visibility
+                 , "del"     : delete_message
                  };
 
 

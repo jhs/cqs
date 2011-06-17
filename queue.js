@@ -201,6 +201,7 @@ Queue.prototype.receive = function(opts, callback) {
 
         var msg = new message.Message(msg_opts);
         msg.queue = self;
+        msg.VisibilityTimeout = vis_timeout;
         msg.mvcc = {'_id':row.value._id, '_rev':row.value._rev};
         msg.receive(function(er) { on_receive(er, i, msg) });
       })

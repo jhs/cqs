@@ -14,6 +14,7 @@ var API = { 'CreateQueue': queue.create
           , 'GetQueueAttributes': queue.get
           , 'SendMessage'   : queue.send
           , 'ReceiveMessage': queue.receive
+          , 'ChangeMessageVisibility': message.change_visibility
           , 'DeleteMessage' : message.del
 
           // Unofficial object API

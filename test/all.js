@@ -348,4 +348,61 @@ function check_message_deletion(done) {
   })
 },
 
+function change_message_time(done) {
+  state.foo.send('to be changed 1', function(er) {
+    if(er) throw er;
+    state.foo.send('to be changed 2', function(er) {
+      if(er) throw er;
+
+      var begin_at = new Date;
+      var opts = {'MaxNumberOfMessages':2, 'VisibilityTimeout':60};
+      state.foo.receive(opts, function(er, msgs) {
+        if(er) throw er;
+        assert.equal(msgs.length, 2, "Should get both messages");
+
+        var end_at = new Date
+          , txn_ms = end_at - begin_at
+          , txn_at = add(begin_at, txn_ms / 2)
+          , msg1 = msgs[0]
+          , msg2 = msgs[1]
+          , checkout_ms
+          ;
+
+        checkout_ms = msg1.visible_at - txn_at;
+        assert.almost(checkout_ms, 60000, "Message 1 receive should be 60s: " + checkout_ms);
+
+        checkout_ms = msg2.visible_at - txn_at;
+        assert.almost(checkout_ms, 60000, "Message 2 receive should be 60s: " + checkout_ms);
+
+        // Seconds style.
+        var new_secs = 123;
+        begin_at = new Date;
+        cqs.ChangeMessageVisibility(msg1, new_secs, function(er, new_msg1) {
+          if(er) throw er;
+
+          end_at = new Date;
+          txn_ms = end_at - begin_at;
+          txn_at = add(begin_at, txn_ms / 2);
+          checkout_ms = new_msg1.visible_at - txn_at;
+
+          assert.equal(I(msg1.visible_at), I(new_msg1.visible_at), "Calling message and received message should have the same data");
+          assert.almost(checkout_ms, 123 * 1000, "Updated time should have 123 seconds remaining");
+
+          msg1.del(function(er) {
+            msg2.del(function(er2) {
+              done(er || er2);
+            })
+          })
+        })
+      })
+    })
+  })
+
+  function add(timestamp, ms) {
+    var res = new Date(timestamp);
+    res.setUTCMilliseconds(res.getUTCMilliseconds() + ms);
+    return res;
+  }
+},
+
 ] // TESTS
