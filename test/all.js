@@ -151,7 +151,11 @@ function receive_message(done) {
     assert.equal(msg.Body.this_is, state.message_one.Body.this_is, "Message should be message one's body");
     assert.equal(msg.Body.this_is, 'Message one'                 , "Message should be message one's body");
 
-    msg.del(function(er) {
+    // Deliberately leaving this message in the queue, to help expose errors,
+    // such as incomplete timeouts.
+    done();
+
+    if(false) msg.del(function(er) {
       delete state.message_one;
       done(er);
     })

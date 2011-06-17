@@ -153,6 +153,7 @@ Queue.prototype.receive = function(opts, callback) {
 
   var msg_count   = opts.MaxNumberOfMessages || 1;
   var vis_timeout = opts.VisibilityTimeout || self.VisibilityTimeout;
+  var is_heartbeat = opts.is_heartbeat || false;
 
   assert.ok(msg_count > 0  , "Message count is too low");
   assert.ok(msg_count <= 10, "Message count is too high");
@@ -202,6 +203,7 @@ Queue.prototype.receive = function(opts, callback) {
         var msg = new message.Message(msg_opts);
         msg.queue = self;
         msg.VisibilityTimeout = vis_timeout;
+        msg.is_heartbeat      = is_heartbeat;
         msg.mvcc = {'_id':row.value._id, '_rev':row.value._rev};
         msg.receive(function(er) { on_receive(er, i, msg) });
       })
