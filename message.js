@@ -180,6 +180,33 @@ Message.prototype.reset = function(doc, new_visible_at) {
     self.visible_at = new_visible_at;
     self.ReceiptHandle = {'_id':doc._id, '_rev':doc._rev};
   }
+
+  self.receive_timers = self.receive_timers || [];
+  self.receive_timers.forEach(function(timer) {
+    clearTimeout(timer);
+  })
+  self.receive_timers = [];
+
+  var reset_at = new Date
+    , receipt_ms = new_visible_at - reset_at
+    , warning_interval_ms, a, warner
+    ;
+
+  if(new_visible_at) {
+    for(a = 1; a <= 12; a++) {
+      warning_interval_ms = receipt_ms * (a / 12);
+      warner = setTimeout(on_warn, warning_interval_ms);
+      self.receive_timers.push(warner);
+    }
+  }
+
+  function on_warn() {
+    var interval_at = new Date
+      , elapsed_ms = interval_at - reset_at
+      , elapsed_pc = 100 * elapsed_ms / receipt_ms
+      ;
+    self.emit('heartbeat', elapsed_pc);
+  }
 }
 
 Message.prototype.visibility =

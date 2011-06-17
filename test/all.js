@@ -151,7 +151,10 @@ function receive_message(done) {
     assert.equal(msg.Body.this_is, state.message_one.Body.this_is, "Message should be message one's body");
     assert.equal(msg.Body.this_is, 'Message one'                 , "Message should be message one's body");
 
-    done();
+    msg.del(function(er) {
+      delete state.message_one;
+      done(er);
+    })
   })
 },
 
@@ -313,7 +316,7 @@ function specify_message_id(done) {
 
       var received_extra = msg[0].MessageId.slice(msg[0].MessageId.length - extra.length);
       assert.equal(received_extra, extra, "Should get the right ID extra: " + extra);
-      done();
+      msg[0].del(done);
     })
   })
 },
