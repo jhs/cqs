@@ -388,9 +388,25 @@ function change_message_time(done) {
           assert.equal(I(msg1.visible_at), I(new_msg1.visible_at), "Calling message and received message should have the same data");
           assert.almost(checkout_ms, 123 * 1000, "Updated time should have 123 seconds remaining");
 
-          msg1.del(function(er) {
-            msg2.del(function(er2) {
-              done(er || er2);
+          // Timestamp style, also object style.
+          begin_at = new Date;
+          var new_time = add(begin_at, 321 * 1000);
+          msg2.change_visibility(new_time, function(er, new_msg2) {
+            if(er) throw er;
+
+            end_at = new Date;
+            txn_ms = end_at - begin_at;
+            txn_at = add(begin_at, txn_ms);
+            checkout_ms = new_msg2.visible_at - txn_at;
+
+            assert.equal(I(msg2.visible_at), I(new_msg2.visible_at), "Calling message and received message need same data");
+            assert.equal(new_msg2.visible_at, new_time, "Message visible timestamp expected " + I(new_time) + ": " + I(new_msg2.visible_at));
+            assert.almost(checkout_ms, 321 * 1000, "checkout_ms expected 321 seconds: " + checkout_ms);
+
+            msg1.del(function(er) {
+              msg2.del(function(er2) {
+                done(er || er2);
+              })
             })
           })
         })

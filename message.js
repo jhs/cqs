@@ -168,6 +168,7 @@ Message.prototype.receive = function receive_message(callback) {
   })
 }
 
+Message.prototype.visibility =
 Message.prototype.change_visibility = function (new_time, callback) {
   var self = this;
 
@@ -184,9 +185,9 @@ Message.prototype.change_visibility = function (new_time, callback) {
     new_time.setUTCMilliseconds(new_time.getUTCMilliseconds() + delta_ms);
   } else {
     delta_ms = new_time - now;
-    if(ms_delta < 0)
+    if(delta_ms < 0)
       return callback(new Error('Requested change ' + lib.JS(new_time) + ' is too late'));
-    if(ms_delta < 2000)
+    if(delta_ms < 2000)
       return callback(new Error('Requested change ' + lib.JS(new_time) + ' is less than 2s from now'));
   }
 
