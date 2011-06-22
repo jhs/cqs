@@ -49,6 +49,21 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   if(!msg_id)
     return; // Another ddoc will handle this validation.
 
+  var IS_DB_ADMIN = false;
+
+  secObj.admins = secObj.admins || {};
+  secObj.admins.names = secObj.admins.names || [];
+  secObj.admins.roles = secObj.admins.roles || [];
+
+  if(userCtx.roles.indexOf('_admin') !== -1)
+    IS_DB_ADMIN = true;
+
+  if(secObj.admins.names.indexOf(userCtx.name) !== -1)
+    IS_DB_ADMIN = true;
+  for(i = 0; i < userCtx.roles; i++)
+    if(secObj.admins.roles.indexOf(userCtx.roles[i]) !== -1)
+      IS_DB_ADMIN = true;
+
   var good_keys = [ "_id", "_rev", "_revisions", "_deleted"
                   , 'SenderId'
                   , 'SentTimestamp'
@@ -68,8 +83,12 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
       throw({forbidden: "Invalid field: " + key});
 
   if(newDoc._deleted) {
-    if(oldDoc.ReceiverId !== userCtx.name)
-      throw {forbidden: 'You may not delete this document'};
+    if(oldDoc.ReceiverId !== userCtx.name) {
+      if(IS_DB_ADMIN)
+        log('Allowing db admin "'+userCtx.name+'" to delete: ' + newDoc._id);
+      else
+        throw {forbidden: 'You may not delete this document'};
+    }
 
     return;
   }
