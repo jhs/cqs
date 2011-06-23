@@ -212,6 +212,7 @@ function uuids_for(couch) {
     return UUIDS[couch.url];
 
   var getter = UUIDS[couch.url] = new events.EventEmitter;
+  getter.setMaxListeners(30);
   getter.couch = couch;
   getter.pool = [];
   getter.fetching = false;
