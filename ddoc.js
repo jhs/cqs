@@ -82,7 +82,10 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
     if(good_keys.indexOf(key) === -1)
       throw({forbidden: "Invalid field: " + key});
 
-  if(newDoc._deleted) {
+  if(! newDoc._deleted) {
+    if(newDoc.Body === null || newDoc.Body === undefined)
+      throw {forbidden: 'Invalid .Body: ' + JSON.stringify(newDoc.Body)};
+  } else {
     if(oldDoc.ReceiverId !== userCtx.name) {
       if(IS_DB_ADMIN)
         log('Allowing db admin "'+userCtx.name+'" to delete: ' + newDoc._id);
