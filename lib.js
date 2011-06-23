@@ -139,15 +139,14 @@ Once.prototype.job = function(task) {
   // Only the first .job() call does anything.
   if(self.task)
     return;
-  self.task = task;
 
+  self.task = task;
   self.pending = self.pending || new events.EventEmitter;
 
+  task(on_done);
   function on_done() {
     self.is_done = true;
     self.result = Array.prototype.slice.call(arguments);
     self.pending.emit.apply(self.pending, ['done'].concat(self.result));
   }
-
-  task(on_done);
 }
