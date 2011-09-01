@@ -207,7 +207,7 @@ DDoc.prototype.add_browser = function(callback) {
                   ,   lib.JS(opts) + ','
                   ,   ''
                   ,   '// Modules'
-                  ,   lib.JS(['main.js']) + ','
+                  ,   '["main.js"],'
                   ,   ''
                   ,   '// Code to run when ready'
                   ,   'function(main) { return main(); }'
