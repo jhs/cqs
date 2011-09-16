@@ -50,7 +50,6 @@ function setup(done) {
 // =-=-=-=-=-=-=-=-=
 
 function create_queue(done) {
-  //cqs.CreateQueue('foo', function(er, queue) {
   cqs.CreateQueue('foo', function(er, queue) {
     if(er) return done(er);
     assert.equal(queue.name, 'foo', "CreateQueue returns the queue name");
