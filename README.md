@@ -178,3 +178,15 @@ The test suite copies itself into CouchDB as a Couch app. Just visit `/cqs_test/
 To simulate environment variables, use the URL query string, for example:
 
     http://localhost:5984/cqs_test/_design/CQS%2fapi_tests/test.html?C=10&exit=true
+
+## To Do
+
+I wish CQS had many more features.
+
+* Use one design document instead of one per queue. One design document is better at the low end, multiple design documents are better at the high end. Ideally, we can choose one or the other.
+* Management
+  * Every API call has a 0.1% chance of running management tasks
+  * You could run a dedicated management process so the producers/consumers don't have to worry
+  * Purge old messages
+
+[sqs_api]: http://docs.amazonwebservices.com/AWSSimpleQueueService/latest/APIReference/
