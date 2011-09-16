@@ -71,6 +71,8 @@ exports.req_json = function req_json(opts, callback) {
     callback(new Error('Request timeout (' + (duration/1000) + 's) : ' + opts.uri));
   }
 
+  return request(opts, on_req_done);
+
   function on_req_done(er, resp, body) {
     clearTimeout(timer);
     if(timed_out)
@@ -88,8 +90,6 @@ exports.req_json = function req_json(opts, callback) {
 
     return callback(null, resp, obj);
   }
-
-  return request(opts, on_req_done);
 }
 
 exports.enc_id = function encode_doc_id(id) {
