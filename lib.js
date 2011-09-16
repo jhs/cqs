@@ -98,26 +98,24 @@ exports.enc_id = function encode_doc_id(id) {
 // Wrap log4js so it will not be a dependency.
 var VERBOSE = !!process.env.verbose;
 
-var noop = function() {};
-var noops = { "trace": noop
-            , "debug": VERBOSE ? console.log   : noop
-            , "info" : console.info
-            , "warn" : console.warn
-            , "error": console.error
-            , "fatal": console.error
+function faux_log4js() {
+  return {"getLogger":faux_getLogger};
 
-            , "setLevel": noop
-            }
-
-try {
-  exports.log4js = require('log4js');
-} catch(e) {
-  exports.log4js = function() {
-    return { 'getLogger': function() { return noops }
-           }
+  function faux_getLogger() {
+    var noop = function() {};
+    return { "setLevel": noop
+           , "trace": noop
+           , "debug": VERBOSE ? console.log : noop
+           , "info" : console.info
+           , "warn" : console.warn
+           , "error": console.error
+           , "fatal": console.error
+           };
   }
 }
 
+try      { exports.log4js = require('log4js') }
+catch(e) { exports.log4js = faux_log4js       }
 
 //
 // A simple run-once tool
