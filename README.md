@@ -160,7 +160,7 @@ The test suite is plain old Javascript, nothing fancy. Just run the `run.js` com
 
 Use environment variables to set operational parameters, for example:
 
-    env couch=https://admin:secret@example.iriscouch.com C=10 ./tests/run.js
+    env couch=https://admin:secret@example.iriscouch.com C=20 ./tests/run.js
 
 List of variables:
 
