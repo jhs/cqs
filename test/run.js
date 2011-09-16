@@ -59,7 +59,7 @@ function run() {
   if(!test)
     return complete();
 
-  var starts_with_xx = /^xx/.test(test.name);
+  var starts_with_xx = !! /^xx/.exec(test.name);
   if(test.name !== 'setup') {
     if( XX_MEANS_EXCLUDE ? starts_with_xx : !starts_with_xx )
       return count.inc('skip');

@@ -49,11 +49,13 @@ var TEMPLATE =
 
 function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   var ddoc = this;
-  var NAME = "XXX_name_XXX";
 
+  var NAME = "XXX_name_XXX";
   var my_msg_id = XXX_my_msg_id_XXX;
 
-  if(! /^CQS\//.test(newDoc._id)) // A simple test, hopefully future-proof
+  // Only allow CQS documents in this database. Hopefully this is future-proof.
+  var is_cqs = !! /^CQS\//.exec(newDoc._id);
+  if(! is_cqs)
     throw({forbidden: "This database is for CQS only"});
 
   var msg_id = my_msg_id(newDoc); // Message ID is the part within the queue namespace.
@@ -135,7 +137,7 @@ function visible_at(doc) {
     // which means MVCC stuff and anything else necessary.
     val = {"_id":doc._id, "_rev":doc._rev};
     for(a in doc)
-      if(/^[A-Z]/.test(a))
+      if(!! /^[A-Z]/.exec(a))
         val[a] = doc[a];
 
     emit(key, val);
@@ -232,7 +234,7 @@ DDoc.prototype.add_browser = function(callback) {
       if(er) return callback(er);
       self.log.debug('Files: ' + lib.JS(files));
 
-      files = files.filter(function(file) { return /\.js$/.test(file) || /\.html$/.test(file) });
+      files = files.filter(function(file) { return !! ( /\.js$/.exec(file) || /\.html$/.exec(file) ) });
 
       get_file();
       function get_file() {
@@ -293,7 +295,8 @@ DDoc.prototype.add_browser = function(callback) {
             return callback(new Error('Unknown directory: ' + att_dir));
 
           var att = att_dir + filename;
-          var type = /\.html$/.test(filename) ? 'text/html; charset=utf-8' : 'application/javascript';
+          var is_html = !! /\.html$/.exec(filename);
+          var type = is_html ? 'text/html; charset=utf-8' : 'application/javascript';
           self._attachments[att] = { 'content_type':type, 'data':content.toString('base64') };
 
           get_file();

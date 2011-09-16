@@ -131,7 +131,7 @@ Message.prototype.update = function update_message(callback) {
     else {
       // This message was deleted;
       for (key in self)
-        if(/^[A-Z]/.test(key))
+        if(!! /^[A-Z]/.exec(key))
           delete self[key];
       self.deleted = true;
     }
@@ -150,7 +150,7 @@ Message.prototype.receive = function receive_message(callback) {
 
   assert.ok(self.mvcc);
   assert.ok(self.mvcc._id);
-  assert.ok(new RegExp('/' + self.MessageId + '$').test(self.mvcc._id), lib.JS({_id:self.mvcc._id, ID:self.MessageId}));
+  assert.ok(new RegExp('/' + self.MessageId + '$').exec(self.mvcc._id), lib.JS({_id:self.mvcc._id, ID:self.MessageId}));
   assert.ok('ApproximateReceiveCount'          in self, util.inspect(self));
   assert.ok('ApproximateFirstReceiveTimestamp' in self);
 
@@ -283,7 +283,7 @@ Message.prototype.del = function message_del(callback) {
       self.log.info('Unknown response to delete' + lib.JS(result));
 
     Object.keys(self).forEach(function (key) {
-      if(/^[A-Z]/.test(key))
+      if(!! /^[A-Z]/.exec(key))
         delete self[key];
     })
 
