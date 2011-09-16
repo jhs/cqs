@@ -136,4 +136,14 @@ When a message is "done", remove it from the queue.
       console.log('Message deleted');
     })
 
+## To Do
+
+I wish CQS had many more features.
+
+* Use one design document instead of one per queue. One design document is better at the low end, multiple design documents are better at the high end. Ideally, we can choose one or the other.
+* Management
+  * Every API call has a 0.1% chance of running management tasks
+  * You could run a dedicated management process so the producers/consumers don't have to worry
+  * Purge old messages
+
 [sqs_api]: http://docs.amazonwebservices.com/AWSSimpleQueueService/latest/APIReference/
