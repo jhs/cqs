@@ -42,6 +42,7 @@ function Queue (opts) {
   self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
 
   self.cache_confirmation = true;
+  self.browser_attachments = !!(opts.browser_attachments);
 
   self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
@@ -93,10 +94,10 @@ Queue.prototype.create = function create_queue(callback) {
   assert.ok(callback);
 
   var ddoc = new queue_ddoc.DDoc(self);
-  if(self.skip_browser)
-    go();
-  else
+  if(self.browser_attachments)
     ddoc.add_browser(go);
+  else
+    go();
 
   function go(er) {
     if(er) return callback(er);
@@ -237,10 +238,10 @@ Queue.prototype.set = function set_attrs(opts, callback) {
     ddoc._rev = self.ddoc_rev;
     lib.copy(opts, ddoc, 'uppercase');
 
-    if(self.skip_browser)
-      go();
-    else
+    if(self.browser_attachments)
       ddoc.add_browser(go);
+    else
+      go();
 
     function go(er) {
       if(er) return callback(er);

@@ -57,6 +57,7 @@ Creating queues requires **database administrator** access.
     // Create with an options object.
     var opts = { QueueName               : "unimportant_stuff"
                , DefaultVisibilityTimeout: 3600 // 1 hour
+               , browser_attachments     : true // Attach browser libs and test suite
                };
 
     cqs.CreateQueue(opts, function(error, queue) {

@@ -14,7 +14,11 @@ if(require.isBrowser) {
 }
 
 var time_C = parseFloat("" + (process.env.timeout_coefficient || process.env.C || 1.0));
-var cqs = require('../api').defaults({'couch':COUCH, 'db':DB, 'time_C':time_C})
+var cqs = require('../api').defaults({ 'couch' : COUCH
+                                     , 'db'    : DB
+                                     , 'time_C': time_C
+                                     , browser_attachments: !(process.env.skip_browser)
+                                     })
   , util = require('util'), I = util.inspect
   , assert = require('assert')
   , request = require('request')
