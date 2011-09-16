@@ -9,7 +9,7 @@ var lib = require('../lib')
   ;
 
 var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *only* the xx tests.
-var DEFAULT_TEST_TIMEOUT = 250; // ms
+var DEFAULT_TEST_TIMEOUT = 500; // ms
 var TIMEOUT_COEFFICIENT = 1.0;
 
 var TESTS = require('./all');
