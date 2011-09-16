@@ -59,6 +59,9 @@ exports.req_json = function req_json(opts, callback) {
   if(!('followRedirect' in opts))
     opts.followRedirect = false;
 
+  // Force Request to return a deserialized object.
+  opts.json = opts.json || true;
+
   var started_at = new Date;
   var timer_ms = (opts.timeout || 5000) * (opts.time_C || 1.0);
   delete opts.time_C;
@@ -82,13 +85,9 @@ exports.req_json = function req_json(opts, callback) {
 
     if(resp.statusCode < 200 || resp.statusCode >= 300)
       if(! couch_errors_are_ok)
-        return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
+        return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + exports.JS(body)));
 
-    var obj;
-    try           { obj = JSON.parse(body) }
-    catch (js_er) { return callback(js_er) }
-
-    return callback(null, resp, obj);
+    return callback(null, resp, body);
   }
 }
 
