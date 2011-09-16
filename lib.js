@@ -83,8 +83,12 @@ exports.req_json = function req_json(opts, callback) {
         return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + body));
 
     var obj;
-    try           { obj = JSON.parse(body) }
-    catch (js_er) { return callback(js_er) }
+    if (typeof(body) === 'string') {
+      try           { obj = JSON.parse(body) }
+      catch (js_er) { return callback(js_er) }
+    } else {
+      obj = body;
+    }
 
     return callback(null, resp, obj);
   }
