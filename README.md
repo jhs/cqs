@@ -194,7 +194,7 @@ I wish CQS had many more features.
 
 CouchDB stores delete operations indefinitely. This allows delete operations to replicate. Unfortunately, deleted documents accumulate, consuming disk space.
 
-Damien describes [CouchDB purging] in the mailing list. Purging permanently removes documents, as if they never existed.  Databases with high create/delete churn ultimately must be purged at some point. Purge operations, by intention, cannot replicate; thus purging is essentially local database maintenance, only done to documents which nobody will ever miss. A final concern is that purging too often will destroy view indexes. Applications using views will be effectively offline until the views rebuild.
+Damien describes [CouchDB purging][purge] in the mailing list. Purging permanently removes documents, as if they never existed.  Databases with high create/delete churn ultimately must be purged at some point. Purge operations, by intention, cannot replicate; thus purging is essentially local database maintenance, only done to documents which nobody will ever miss. A final concern is that purging too often will destroy view indexes. Applications using views will be effectively offline until the views rebuild.
 
 The following procedure is a cooperative technique for safe, zero-impact, zero-downtime, purging. Since purging is local to a database, the procedure makes some assumptions:
 
@@ -237,7 +237,7 @@ The procedure:
   * Maybe query with `&include_docs=true` and check `deleted_at` vs. **now** - **Age**
   * Maybe a `_changes` filter to do all this server-side?
   * Maybe follow-up on the deleted docs (`POST _all_docs?include_docs=true {"keys":[...]}`) looking for old `deleted_at`
-  * If COUCHDB-1252 is done, a view could help: `if(doc._deleted && doc.deleted_at) emit(doc.deleted_at, 1);`
+  * If [COUCHDB-1252][jira_1252] is done, a view could help: `if(doc._deleted && doc.deleted_at) emit(doc.deleted_at, 1);`
 1. Run the purge request
 1. *Freshen the views*
 1. Purge again with 0 documents. This scrubs the purge operation, which had left copies of IDs and revs in the file.
@@ -248,3 +248,4 @@ The procedure:
 
 [sqs_api]: http://docs.amazonwebservices.com/AWSSimpleQueueService/latest/APIReference/
 [purge]: http://mail-archives.apache.org/mod_mbox/couchdb-dev/200809.mbox/%3CDB2669F6-EDFB-44CB-9406-555B7721BA2F@apache.org%3E
+[jira_1252]: https://issues.apache.org/jira/browse/COUCHDB-1252
