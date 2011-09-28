@@ -215,7 +215,7 @@ The procedure:
 1. *Sanity checks*. These are optional but can reduce the time the lock is held.
   1. *Ping the DB*
      * If compaction is running, abort, otherwise...
-     * Remember **update_seq** = `committed_update_seq || update_seq`
+     * Remember **update_seq** = `committed_update_seq`
      * Remember **now** = the `Date` header
   1. *Freshen the views*. For each design document:
      1. Pick a deterministically random view based on `_id` and `_rev`
