@@ -214,13 +214,13 @@ The procedure:
 
 1. *Sanity checks*. These are optional but can reduce the time the lock is held.
   1. *Ping the DB*
-    * If compaction is running, abort, otherwise...
-    * Remember **update_seq** = `committed_update_seq || update_seq`
-    * Remember **now** = the `Date` header
+     * If compaction is running, abort, otherwise...
+     * Remember **update_seq** = `committed_update_seq || update_seq`
+     * Remember **now** = the `Date` header
   1. *Freshen the views*. For each design document:
-    1. Pick a deterministically random view based on `_id` and `_rev`
-    1. Query the view `?reduce=false&limit=1`
-    1. Query `_info`. If `purge_seq` changes during this loop, something is wrong. Abort.
+     1. Pick a deterministically random view based on `_id` and `_rev`
+     1. Query the view `?reduce=false&limit=1`
+     1. Query `_info`. If `purge_seq` changes during this loop, something is wrong. Abort.
 1. Fetch `_local/maintenance` which should have an `expires_at` value.
 1. If the expiration timestamp is greater than the `Date` header timestamp, abort
 1. Store `_local/maintenance` and abort if the request fails
