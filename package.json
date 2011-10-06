@@ -9,9 +9,10 @@
                 , "url": "git://github.com/iriscouch/cqs" }
 , "engines": [ "node" ]
 
-, "dependencies"   : { "request" : ">=2.1.1"
+, "dependencies"   : { "request" : "2.1.1"
                      }
-, "devDependencies": {
+
+, "devDependencies": { "tap": "0.0.10"`
                      }
 , "main": "./api"
 }
