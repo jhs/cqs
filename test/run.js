@@ -18,7 +18,7 @@ var TESTS = require('./all');
 while(! TESTS[TESTS.length - 1])
   TESTS.length = TESTS.length - 1;
 
-var LOG = lib.log4js().getLogger('tests');
+var LOG = lib.log4js.getLogger('tests');
 LOG.setLevel(lib.LOG_LEVEL);
 
 //

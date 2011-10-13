@@ -163,7 +163,7 @@ function DDoc (queue) {
 }
 
 // One common logger for them all, just so it won't get stored in couch.
-DDoc.prototype.log = lib.log4js().getLogger('ddoc');
+DDoc.prototype.log = lib.log4js.getLogger('ddoc');
 DDoc.prototype.log.setLevel(lib.LOG_LEVEL);
 
 DDoc.prototype.copy_template = function() {

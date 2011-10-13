@@ -41,7 +41,7 @@ function Message (opts) {
   self.queue       = opts.queue       || null;
   self.is_heartbeat= opts.is_heartbeat|| false;
 
-  self.log = lib.log4js().getLogger('Message/' + (self.MessageId || 'untitled'));
+  self.log = lib.log4js.getLogger('Message/' + (self.MessageId || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
 }
 util.inherits(Message, events.EventEmitter);

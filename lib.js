@@ -14,8 +14,10 @@
 
 var request = require('request')
   , events = require('events')
+  , log4js = require('log4js')
   ;
 
+exports.log4js = require('log4js');
 exports.LOG_LEVEL = process.env.cqs_log_level || "info";
 
 exports.scrub_creds = function scrub_creds(url) {
@@ -94,28 +96,6 @@ exports.req_json = function req_json(opts, callback) {
 exports.enc_id = function encode_doc_id(id) {
   return encodeURIComponent(id).replace(/^_design%2[fF]/, '_design/');
 }
-
-// Wrap log4js so it will not be a dependency.
-var VERBOSE = !!process.env.verbose;
-
-function faux_log4js() {
-  return {"getLogger":faux_getLogger};
-
-  function faux_getLogger() {
-    var noop = function() {};
-    return { "setLevel": noop
-           , "trace": noop
-           , "debug": VERBOSE ? console.log : noop
-           , "info" : console.info
-           , "warn" : console.warn
-           , "error": console.error
-           , "fatal": console.error
-           };
-  }
-}
-
-try      { exports.log4js = require('log4js') }
-catch(e) { exports.log4js = faux_log4js       }
 
 //
 // A simple run-once tool

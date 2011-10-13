@@ -11,6 +11,7 @@
 
 , "dependencies"   : { "request" : "2.1.1"
                      , "defaultable": "0.6.1"
+                     , "log4js": "0.3.9"
                      }
 
 , "devDependencies": { "tap": "0.0.10"

@@ -44,7 +44,7 @@ function Queue (opts) {
   self.cache_confirmation = true;
   self.browser_attachments = !!(opts.browser_attachments);
 
-  self.log = lib.log4js().getLogger('queue/' + (self.name || 'untitled'));
+  self.log = lib.log4js.getLogger('queue/' + (self.name || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
 }
 

@@ -48,7 +48,7 @@ function Couch (opts) {
   self.time_C  = opts.time_C  || null;
   self.known_dbs = null;
 
-  self.log = lib.log4js().getLogger('Couch/' + self.url);
+  self.log = lib.log4js.getLogger('Couch/' + self.url);
   self.log.setLevel(lib.LOG_LEVEL);
 }
 
@@ -147,7 +147,7 @@ function Database (opts) {
   self.secObj = null;
   self.known_queues = null;
 
-  self.log = lib.log4js().getLogger('DB/' + self.name);
+  self.log = lib.log4js.getLogger('DB/' + self.name);
   self.log.setLevel(process.env.cqs_log_level || "info");
 }
 
