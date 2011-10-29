@@ -97,8 +97,13 @@ exports.req_json = function req_json(opts, callback) {
       return callback(er);
 
     if(resp.statusCode < 200 || resp.statusCode >= 300)
-      if(! couch_errors_are_ok)
-        return callback(new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + exports.JS(body)));
+      if(! couch_errors_are_ok) {
+        er = new Error('Couch response ' + resp.statusCode + ' to ' + opts.uri + ': ' + exports.JS(body));
+        er.statusCode = resp.statusCode;
+        for (var key in body)
+          er[key] = body[key];
+        return callback(er);
+      }
 
     return callback(null, resp, body);
   }
