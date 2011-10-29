@@ -431,4 +431,65 @@ function change_message_time(done) {
   }
 },
 
+function receive_conflict(done) {
+  state.foo.send({hopefully:'Receive conflict!'}, function(er) {
+    if(er) throw er;
+
+    var real_request = state.foo.db.request;
+    assert.equal(typeof real_request, 'function', 'Need to cache request function');
+
+    // Force the same view result to come back to both receivers, so they attempt to receive the same message.
+    var first_callback, runs = 0;
+    state.foo.db.request = function(opts, callback) {
+      runs += 1;
+
+      assert.ok(runs < 3, 'Only 2 runs allowed');
+      if(runs == 1)
+        assert.ok(!first_callback, 'Should not have a callback registered this first run');
+      if(runs == 2)
+        assert.ok(first_callback , 'Should have a callback registered this second run');
+
+      if(runs == 1)
+        first_callback = callback;
+      else {
+        real_request.apply(this, [opts, dual_callback]);
+        state.foo.db.request = real_request; // Reset it back to normal.
+      }
+
+      function dual_callback() {
+        first_callback.apply(this, arguments);
+        callback.apply(this, arguments);
+      }
+    }
+
+    var results = {};
+    function result(label, val) {
+      results[label] = val;
+      if(Object.keys(results).length == 2)
+        check_results(results.first, results.second);
+    }
+
+    state.foo.receive(1, function(er, msgs) {
+      if(er) throw er;
+      result('first', msgs);
+    })
+
+    state.foo.receive(1, function(er, msgs) {
+      if(er) throw er;
+      result('second', msgs);
+    })
+
+    function check_results(msgs1, msgs2) {
+      assert.equal(msgs1.length + msgs2.length, 1, 'One message between the two receive batches');
+      assert.ok(msgs1.length == 0 || msgs2.length == 0, 'One batch got no messages');
+
+      var msg = msgs1[0] || msgs2[0];
+      assert.ok(msg, 'Got the message despite conflict');
+      assert.equal(msg.Body.hopefully, 'Receive conflict!', 'Got the correct message despite conflict');
+
+      done();
+    }
+  })
+},
+
 ] // TESTS

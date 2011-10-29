@@ -204,8 +204,15 @@ Queue.prototype.receive = function(opts, callback) {
       // Don't lose the order CouchDB set for the messages.
       var messages = [], count = 0;
       function on_receive(er, pos, msg) {
-        if(er)
-          self.log.error('Receive error', er);
+        if(er && er.statusCode != 409 && er.error != 'conflict') {
+          self.log.debug('Receive error: ' + er);
+          return callback(er);
+        }
+
+        if(er && er.statusCode == 409 && er.error == 'conflict') {
+          self.log.debug('Missed message '+pos+': ' + msg.MessageId);
+          msg = null;
+        }
 
         messages[pos] = msg || null;
 
