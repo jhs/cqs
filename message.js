@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+require('defaultable')(module,
+  {
+  }, function(module, exports, DEFS, require) {
+
 var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
@@ -301,7 +305,7 @@ Message.prototype.import_doc = function(doc) {
 
 function change_visibility(opts, VisibilityTimeout, callback) {
   var message;
-  if(opts instanceof Message)
+  if(lib.instanceof(opts, Message))
     message = opts;
   else if(opts.ReceiptHandle)
     return callback(new Error('ReceiptHandle is unsupported, use "Message" instead with message object'));
@@ -326,3 +330,5 @@ module.exports = { "Message" : Message
 //
 // Utilities
 //
+
+}) // defaultable

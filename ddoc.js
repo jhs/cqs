@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+require('defaultable')(module,
+  {
+  }, function(module, exports, DEFS, require) {
+
 var fs = require('fs')
   , lib = require('./lib')
   , path = require('path')
@@ -381,3 +385,5 @@ function is_list_equal(a, b) {
   }
   return true;
 }
+
+}) // defaultable

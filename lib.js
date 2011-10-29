@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+require('defaultable')(module,
+  {
+  }, function(module, exports, DEFS, require) {
+
 var request = require('request')
   , events = require('events')
   , log4js = require('log4js')
@@ -19,6 +23,13 @@ var request = require('request')
 
 exports.log4js = require('log4js');
 exports.LOG_LEVEL = process.env.cqs_log_level || "info";
+
+// A workaround since defaultable seems to be breaking `instanceof` since it re-evaluates modules a lot.
+exports.instanceof = function instance0f(obj, type) {
+  if(typeof type != 'function' || typeof obj != 'object')
+    return false;
+  return !!(obj && obj.constructor && obj.constructor.name === type.name);
+}
 
 exports.scrub_creds = function scrub_creds(url) {
   return url.replace(/^(https?:\/\/)[^:]+:[^@]+@(.*)$/, '$1$2'); // Scrub username and password
@@ -140,3 +151,5 @@ Once.prototype.job = function(task) {
     self.pending.emit.apply(self.pending, ['done'].concat(self.result));
   }
 }
+
+}) // defaultable

@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var defaultable = require('defaultable');
+
+defaultable(module,
+  { 'visibility_timeout' : 30
+  , 'browser_attachments': false
+  }, function(module, exports, DEFS, require) {
+
+
 var lib = require('./lib')
   , util = require('util')
   , couch = require('./couch')
@@ -25,7 +33,6 @@ var lib = require('./lib')
 // Constants
 //
 
-var DEFAULT_VISIBILITY_TIMEOUT = 30;
 var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
 
 //
@@ -35,11 +42,16 @@ var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
 function Queue (opts) {
   var self = this;
 
+  if(typeof opts == 'string')
+    opts = {'name':opts};
+
+  opts = defaultable.merge(opts, DEFS);
+
   self.name = opts.name || opts.QueueName || opts._str || null;
   self.time_C = opts.time_C || null;
   self.db = new couch.Database({'couch':opts.couch, 'db':opts.db, time_C:self.time_C});
 
-  self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFAULT_VISIBILITY_TIMEOUT;
+  self.VisibilityTimeout = opts.DefaultVisibilityTimeout || opts.VisibilityTimeout || DEFS.visibility_timeout;
 
   self.cache_confirmation = true;
   self.browser_attachments = !!(opts.browser_attachments);
@@ -304,6 +316,14 @@ function create_queue(opts, cb) {
 
 
 function list_queues(opts, cb) {
+  if(!cb && typeof opts == 'function') {
+    cb = opts;
+    opts = {};
+  }
+
+  if(typeof opts == 'string')
+    opts = {'prefix':opts};
+  opts = defaultable.merge(opts, DEFS);
   var prefix = opts.prefix || opts._str;
 
   if(!cb && opts._func)
@@ -359,7 +379,7 @@ function send_message(opts, message, extra, callback) {
     if(opts.queue instanceof Queue)
       queue = opts.queue
     else
-      queue = new Queue({'QueueName':opts.queue, 'couch':opts.couch, 'db':opts.db});
+      queue = new Queue({'QueueName':opts.queue, 'couch':opts.couch || DEFS.couch, 'db':opts.db || DEFS.db});
   }
   else
     queue = new Queue(opts);
@@ -373,6 +393,9 @@ function send_message(opts, message, extra, callback) {
 }
 
 function receive_message(opts, callback, extra) {
+  if(typeof opts == 'string')
+    opts = {'queue':opts};
+
   var queue;
   if(opts instanceof Queue)
     queue = opts;
@@ -380,7 +403,7 @@ function receive_message(opts, callback, extra) {
     if(opts.queue instanceof Queue)
       queue = opts.queue;
     else
-      queue = new Queue({'QueueName':opts._str || opts.queue, 'couch':opts.couch, 'db':opts.db});
+      queue = new Queue({'QueueName':opts._str || opts.queue, 'couch':opts.couch || DEFS.couch, 'db':opts.db || DEFS.db});
     delete opts.queue;
     delete opts._str;
   } else
@@ -415,3 +438,5 @@ function id_to_name(id) {
     throw new Error("Unknown queue ddoc id: " + id);
   return match[1];
 }
+
+}) // defaultable

@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var defaultable = require('defaultable');
+
+defaultable(module,
+  { 'uuid_batch_size': 100
+  }, function(module, exports, DEFS, require) {
+
 //
 // I know maintenance will eventually have to be performed, like purging old documents.
 // This is a place where it can go. Maybe in the future you can have dedicated maintenance
@@ -34,7 +40,6 @@ var lib = require('./lib')
 
 var KNOWN_COUCHES = {};
 var UUIDS         = {}; // Map couch URLs to UUID pools.
-var UUID_BATCH_SIZE = 100;
 
 //
 // API
@@ -134,6 +139,7 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
 
 function Database (opts) {
   var self = this;
+  opts = defaultable.merge(opts, DEFS);
 
   if(typeof opts.couch !== 'string')
     throw new Error('Required "couch" option with URL of CouchDB');
@@ -260,12 +266,12 @@ function uuids_for(couch) {
       return;
 
     self.fetching = true;
-    self.couch.request('_uuids?count='+UUID_BATCH_SIZE, function(er, resp, result) {
+    self.couch.request('_uuids?count=' + DEFS.uuid_batch_size, function(er, resp, result) {
       self.fetching = false;
       if(er)
         return self.emit('error', er);
 
-      if(!result.uuids || result.uuids.length !== UUID_BATCH_SIZE)
+      if(!result.uuids || result.uuids.length !== DEFS.uuid_batch_size)
         return self.emit('error', new Error('Unknown _uuids result: ' + lib.JS(result)));
 
       self.pool = self.pool.concat(result.uuids);
@@ -275,3 +281,5 @@ function uuids_for(couch) {
 
   return getter;
 }
+
+}) // defaultable
