@@ -25,4 +25,8 @@ exports.get = function(val) {
 
 exports.req = require;
 
+exports.dep = function() {
+  return require('test_dependency').example;
+}
+
 })

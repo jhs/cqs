@@ -71,8 +71,9 @@ test('requiring defaultable modules passes defaults to them', function(t) {
     t.equal(mod.is.get('should'), should_val, 'Defaultable module inherits defaults with require() ' + should_val)
     t.type(mod.is.defaults, 'function', 'Defaultable modules still have defaults() functions')
     t.ok(mod.is.defaults._defaultable, 'Defaultable modules default() functions are recognizable')
-    t.equal(Object.keys(mod.is).length, 2+1, 'Defaultable modules export the same stuff, plus defaults()')
+    t.equal(Object.keys(mod.is).length, 3+1, 'Defaultable modules export the same stuff, plus defaults()')
     t.ok(mod.is.req._defaultable, 'Defaultable modules get the special require')
+    t.equal(mod.is.dep(), 'Example dependency', 'Defaultable module can require stuff from node_modules/')
 
     t.type(mod.fresh.get, 'function', 'Fresh defaultable module still exports normally')
     t.type(mod.fresh.defaults, 'function', 'Fresh defaultable module still has defaults() function')
