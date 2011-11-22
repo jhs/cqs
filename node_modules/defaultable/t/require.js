@@ -34,6 +34,25 @@ test('require function', function(t) {
   t.end();
 })
 
+test('Exporting required modules', function(t) {
+  t.doesNotThrow(go, 'No problems with a defaultable re-exporting another defaultable');
+  function go() {
+    var mod;
+
+    mod = require('./mod/defaultable_reexporter');
+    t.type(mod.defaults, 'function', 'Re-exported defaults exists')
+    t.ok(mod.defaults._defaultable, 'Re-exporteed .defaults are mine')
+    t.equal(mod.defaultable_example, 'Defaultable dependency example', 'Re-exported defaults works')
+
+    mod = mod.defaults({'value': 'New value'})
+    t.type(mod.defaults, 'function', 'Re-exported re-defaulted defaults exists')
+    t.ok(mod.defaults._defaultable, 'Re-exporteed re-defaulted .defaults are mine')
+    t.equal(mod.defaultable_example, 'New value', 'Re-exported defaults override works')
+  }
+
+  t.end();
+})
+
 test('requiring defaultable modules passes defaults to them', function(t) {
   function i_require_stuff(_mod, exps, _DEF, require) {
     exps.is = require('./mod/is_defaultable');
