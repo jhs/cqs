@@ -10,7 +10,7 @@
 , "engines": [ "node" ]
 
 , "dependencies"   : { "request" : "2.2.5"
-                     , "defaultable": "0.7.0"
+                     , "defaultable": "0.7.2"
                      , "log4js": "0.4.0"
                      }
 
