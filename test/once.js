@@ -49,4 +49,35 @@ function once_api_delayed(done) {
   })
 },
 
+{'timeout_coefficient':5},
+function many_waiters(done) {
+  var o = new Once
+    , waiters = 5000
+    , delay = 200
+
+  var found = {};
+  for(var a = 0; a < waiters; a++)
+    o.on_done(waiter(a));
+
+  o.on_done(function() {
+    setTimeout(function() {
+      for(var a = 0; a < waiters; a++)
+        assert.ok(found[a], 'Waiter number ' + a + ' fired')
+      done();
+    }, 500)
+  })
+
+  o.job(function(callback) {
+    setTimeout(function() { callback('ok') }, delay);
+  })
+
+  function waiter(label) {
+    return function(result) {
+      assert.equal(result, 'ok', 'Got the correct result')
+      //console.error(label + ' hit');
+      found[label] = true;
+    }
+  }
+},
+
 ] // TESTS
