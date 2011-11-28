@@ -125,6 +125,7 @@ function Once () {
   self.is_done = false;
   self.pending = null;
   self.result  = undefined;
+  self.listener_count = 0;
 }
 
 Once.prototype.on_done = function(callback) {
@@ -134,7 +135,10 @@ Once.prototype.on_done = function(callback) {
     return callback.apply(null, self.result);
 
   self.pending = self.pending || new events.EventEmitter;
-  self.pending.setMaxListeners(30);
+
+  self.listener_count += 1;
+  self.pending.setMaxListeners(10 + self.listener_count);
+
   self.pending.on('done', callback);
 }
 
@@ -147,7 +151,6 @@ Once.prototype.job = function(task) {
 
   self.task = task;
   self.pending = self.pending || new events.EventEmitter;
-  self.pending.setMaxListeners(30);
 
   task(on_done);
   function on_done() {
