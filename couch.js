@@ -139,7 +139,7 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
 
 function Database (opts) {
   var self = this;
-  opts = defaultable.merge(opts, DEFS);
+  opts = defaultable.merge(opts || {}, DEFS);
 
   if(typeof opts.couch !== 'string')
     throw new Error('Required "couch" option with URL of CouchDB');

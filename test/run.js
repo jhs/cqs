@@ -13,6 +13,7 @@ var DEFAULT_TEST_TIMEOUT = 500; // ms
 var TIMEOUT_COEFFICIENT = 1.0;
 
 var TESTS = [ require('./cqs')
+            , require('./couch')
             , require('./once')
             ].reduce(function(state, tests) { return state.concat(tests) })
 
