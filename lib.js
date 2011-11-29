@@ -13,7 +13,7 @@
 // limitations under the License.
 
 require('defaultable')(module,
-  {
+  { 'request_timeout': 5000
   }, function(module, exports, DEFS, require) {
 
 var request = require('request')
@@ -76,7 +76,7 @@ exports.req_json = function req_json(opts, callback) {
   opts.json = opts.json || true;
 
   var started_at = new Date;
-  var timer_ms = (opts.timeout || 5000) * (opts.time_C || 1.0);
+  var timer_ms = (opts.timeout || DEFS.request_timeout) * (opts.time_C || 1.0);
   delete opts.time_C;
 
   //console.log('Request timeout will be: ' + timer_ms);
