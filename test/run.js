@@ -12,9 +12,10 @@ var XX_MEANS_EXCLUDE = process.env.xx ? false : true; // Set to false to run *on
 var DEFAULT_TEST_TIMEOUT = 500; // ms
 var TIMEOUT_COEFFICIENT = 1.0;
 
-var TESTS = [ require('./cqs')
+var TESTS = [ require('./lib')
             , require('./couch')
             , require('./once')
+            , require('./cqs')
             ].reduce(function(state, tests) { return state.concat(tests) })
 
 // No idea what's going on but in IE, there is an undefined element at the end of the list.
