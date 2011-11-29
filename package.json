@@ -1,5 +1,5 @@
 { "name": "cqs"
-, "version": "0.5.4"
+, "version": "0.5.5"
 , "author": { "name": "Jason Smith"
             , "email": "jhs@iriscouch.com" }
 , "description": "CouchDB Queue Service: an Amazon SQS implementation on CouchDB"
