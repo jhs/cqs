@@ -40,4 +40,30 @@ function api(done) {
   done()
 },
 
+function uuids(done) {
+  var db = new cqs.Db;
+  var couch = db.couch;
+
+  couch.uuid(function(er, uuid) {
+    if(er) throw er;
+    assert.ok(uuid, 'uuid() returns a uuid')
+    assert.equal(typeof uuid, 'string', 'Simple uuid() call returns a uuid')
+    assert.equal(uuid.length, 32, 'uuid is 256-bits (32 bytes)')
+
+    couch.uuid(5, function(er, uuids) {
+      if(er) throw er;
+
+      assert.ok(uuids, 'uuid(N) returns uuids')
+      assert.ok(Array.isArray(uuids), 'uuid(N) returns a list of uuids')
+      assert.equal(uuids.length, 5, 'uuid(N) returns N uuids')
+      uuids.forEach(function(uuid, a) {
+        assert.equal(typeof uuid, 'string', 'UUID #'+ (a+1) + ' is a string')
+        assert.equal(uuid.length, 32, 'UUID #'+ (a+1) +' 256-bits (32 bytes)')
+      })
+
+      done()
+    })
+  })
+},
+
 ] // TESTS
