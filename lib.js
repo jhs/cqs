@@ -84,7 +84,9 @@ exports.req_json = function req_json(opts, callback) {
   function on_timeout() {
     timed_out = true;
     var duration = (new Date) - started_at;
-    callback(new Error('Request timeout (' + (duration/1000) + 's) : ' + opts.uri));
+    var timeout_er = new Error('Request timeout (' + (duration/1000).toFixed(1) + 's): ' + opts.uri);
+    timeout_er.timeout = duration;
+    callback(timeout_er);
   }
 
   return request(opts, on_req_done);
