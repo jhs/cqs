@@ -79,4 +79,21 @@ function lots_of_uuids(done) {
   })
 },
 
+{'timeout_coefficient':10},
+function lots_of_individual_uuids(done) {
+  var db = new cqs.Db;
+  var couch = db.couch;
+
+  var found = 0;
+  for(a = 0; a < 12345; a++)
+    couch.uuid(function(er, uuid) {
+      if(er) throw er;
+
+      assert.equal(typeof uuid, 'string', 'A single UUID out of many');
+      found += 1;
+      if(found == 12345)
+        done();
+    })
+},
+
 ] // TESTS
