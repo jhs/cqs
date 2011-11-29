@@ -126,6 +126,8 @@ function complete() {
   LOG.info('Fail   : ' + count.fail);
   LOG.info('Timeout: ' + count.timeout);
   LOG.info('Skip   : ' + count.skip);
+
+  process.exit(count.fail + count.timeout);
 }
 
 exports.run = function() {
