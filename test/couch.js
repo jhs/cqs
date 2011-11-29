@@ -66,4 +66,17 @@ function uuids(done) {
   })
 },
 
+{'timeout_coefficient':10},
+function lots_of_uuids(done) {
+  var db = new cqs.Db;
+  var couch = db.couch;
+
+  couch.uuid(12345, function(er, uuids) {
+    if(er) throw er;
+
+    assert.equal(uuids.length, 12345, 'Multiple batches of uuids works')
+    done()
+  })
+},
+
 ] // TESTS

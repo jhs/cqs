@@ -227,59 +227,85 @@ module.exports = { "Database" : Database
 //
 
 function uuids_for(couch) {
-  if(UUIDS[couch.url])
-    return UUIDS[couch.url];
+  UUIDS[couch.url] = UUIDS[couch.url] || new UUIDGetter(couch);
+  return UUIDS[couch.url];
+}
 
-  var getter = UUIDS[couch.url] = new events.EventEmitter;
-  getter.setMaxListeners(30);
-  getter.couch = couch;
-  getter.pool = [];
-  getter.fetching = false;
+function UUIDGetter (couch) {
+  var self = this;
 
-  getter.get = function(count, callback) {
-    var self = this;
-    var response;
+  self.couch = couch;
+  self.waiting = [];
+  self.pool = [];
+  self.fetching = false;
+}
 
-    if(count <= self.pool.length) {
-      // Just send back the UUIDs.
-      response  = self.pool.slice(0, count);
-      self.pool = self.pool.slice(count + 1);
+UUIDGetter.prototype.get = function(count, callback) {
+  var self = this;
 
-      if(response.length === 1)
-        response = response[0];
+  self.waiting.push({'count':count, 'callback':callback});
+  self.try_to_send();
+}
 
-      return callback(null, response);
-    } else {
-      // Fetch some more.
-      self.fetch();
-      self.on('error', function(er) { callback(er) });
-      self.on('batch', function() {
-        // A new batch came in. Re-run.
-        return self.get(count, callback);
+UUIDGetter.prototype.try_to_send = function() {
+  var self = this;
+
+  if(self.fetching)
+    return; // When the fetch is done, this will be re-run.
+
+  var waiter = self.waiting[0];
+  if(!waiter)
+    return; // No more waiters for UUIDs.
+
+  // If enough UUIDs are in the pool, just send them now.
+  if(waiter.count <= self.pool.length) {
+    self.respond(self.waiting.shift());
+    return self.try_to_send();
+  }
+
+  // Otherwise, fetch some more.
+  self.fetch();
+}
+
+UUIDGetter.prototype.fetch = function() {
+  var self = this;
+
+  assert.equal(self.fetching, false, 'Fetch called twice in a row: ' + self.couch.url);
+  self.fetching = true;
+
+  self.couch.request('_uuids?count=' + DEFS.uuid_batch_size, function(er, resp, result) {
+    self.fetching = false;
+    if(er)
+      self.waiting.forEach(function(waiter) {
+        waiter.callback(er)
+      })
+
+    else if(!result.uuids || result.uuids.length !== DEFS.uuid_batch_size) {
+      er = new Error('Unknown _uuids result: ' + lib.JS(result));
+      self.waiting.forEach(function(waiter) {
+        waiter.callback(er)
       })
     }
-  }
 
-  getter.fetch = function() {
-    var self = this;
-    if(self.fetching)
-      return;
-
-    self.fetching = true;
-    self.couch.request('_uuids?count=' + DEFS.uuid_batch_size, function(er, resp, result) {
-      self.fetching = false;
-      if(er)
-        return self.emit('error', er);
-
-      if(!result.uuids || result.uuids.length !== DEFS.uuid_batch_size)
-        return self.emit('error', new Error('Unknown _uuids result: ' + lib.JS(result)));
-
+    else {
       self.pool = self.pool.concat(result.uuids);
-      self.emit('batch');
-    })
-  }
+      self.try_to_send();
+    }
+  })
+}
 
-  return getter;
+UUIDGetter.prototype.respond = function(waiter) {
+  var self = this
+    , count = waiter.count
+    , callback = waiter.callback
+
+  var response = self.pool.slice(0, count);
+  self.pool    = self.pool.slice(count + 1);
+
+  if(response.length === 1)
+    response = response[0];
+
+  callback(null, response);
 }
 
 }) // defaultable
