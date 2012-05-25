@@ -12,13 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var tap = require('tap')
+var tap = require('./tap')
+  , test = tap.test
 var util = require('util')
-
-function test(label, tester) {
-  if(!process.env.only || label == process.env.only)
-    tap.test(label, tester)
-}
 
 var lib = require('../../lib')
   , Once = lib.Once

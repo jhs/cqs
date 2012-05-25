@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var tap = require('tap')
+var tap = require('./tap')
+  , test = tap.test
 var util = require('util')
 
 var COUCH = process.env.cqs_couch || 'http://localhost:5984';
@@ -28,11 +29,6 @@ var cqs = require('../../api').defaults({ 'couch' : COUCH
                                         , 'time_C': time_C
                                         , 'browser_attachments': false
                                         })
-
-function test(label, tester) {
-  if(!process.env.only || label == process.env.only)
-    tap.test(label, tester)
-}
 
 
 test('API', function(t) {
