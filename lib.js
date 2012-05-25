@@ -84,6 +84,8 @@ exports.req_json = function req_json(opts, callback) {
   var timer_ms = (opts.timeout || DEFS.request_timeout) * (opts.time_C || 1.0);
   delete opts.time_C;
 
+  var in_flight = request(opts, on_req_done) // Go!
+
   //console.log('Request timeout will be: ' + timer_ms);
   var timed_out = false, timer = setTimeout(on_timeout, timer_ms);
   function on_timeout() {
@@ -91,10 +93,18 @@ exports.req_json = function req_json(opts, callback) {
     var duration = (new Date) - started_at;
     var timeout_er = new Error('Request timeout (' + (duration/1000).toFixed(1) + 's): ' + opts.uri);
     timeout_er.timeout = duration;
+
+    //if(in_flight && in_flight.destroy)
+    //  in_flight.destroy()
+    //if(in_flight && in_flight.response && in_flight.response.abort)
+    //  in_flight.response.abort()
+    if(in_flight && in_flight.response.connection)
+      in_flight.response.connection.destroy()
+
     callback(timeout_er);
   }
 
-  return request(opts, on_req_done);
+  return in_flight
 
   function on_req_done(er, resp, body) {
     clearTimeout(timer);
