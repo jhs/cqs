@@ -14,20 +14,14 @@
 
 require('defaultable')(module,
   { 'request_timeout': 5000
+  , 'log_module'     : null
   }, function(module, exports, DEFS, require) {
 
 var request = require('request')
   , events = require('events')
-  //, log4js = require('log4js')
 
+exports.log4js = DEFS.log_module || require('log4js')
 exports.LOG_LEVEL = process.env.cqs_log_level || "info";
-
-// No more log4js for now.
-function noop() {}
-exports.log4js = {'getLogger':function() { return new FauxLogger }}
-function FauxLogger () {
-  this.setLevel = this.debug = this.info = this.warn = this.error = noop
-}
 
 // A workaround since defaultable seems to be breaking `instanceof` since it re-evaluates modules a lot.
 exports.instanceof = function instance0f(obj, type) {
