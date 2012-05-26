@@ -21,6 +21,7 @@ defaultable(module,
 
 
 var lib = require('./lib')
+  , txn = require('txn')
   , util = require('util')
   , couch = require('./couch')
   , assert = require('assert')
@@ -33,7 +34,7 @@ var lib = require('./lib')
 // Constants
 //
 
-var QUEUE_DDOC_ID_RE           = /^_design\/CQS\/([a-zA-Z0-9_-]{1,80})$/;
+var DDOC_ID = '_design/cqs'
 
 //
 // API
@@ -93,10 +94,13 @@ Queue.prototype.confirmed = function after_confirmed(opt, callback) {
   })
 
   function confirm_queue(done) {
-    var doc_id = new queue_ddoc.DDoc(self)._id;
-    self.log.debug('Confirming queue: ' + doc_id);
-    self.db.request(lib.enc_id(doc_id), function(er, resp, ddoc) {
-      done(er, ddoc);
+    self.log.debug('Confirming queue: ' + self.name);
+    self.db.request(lib.enc_id(DDOC_ID), function(er, res) {
+      if(er)
+        return done(er)
+      if(! (self.name in res.body.queues))
+        return done(new Error('Queue does not exist: ' + self.name))
+      done(null, res.body)
     })
   }
 }
@@ -105,30 +109,51 @@ Queue.prototype.create = function create_queue(callback) {
   var self = this;
   assert.ok(callback);
 
-  var ddoc = new queue_ddoc.DDoc(self);
-  if(self.browser_attachments)
-    ddoc.add_browser(go);
-  else
-    go();
+  self.db.confirmed(function(er) {
+    if(er)
+      return callback(er)
+    txn({'couch':self.db.couch.url, 'db':encodeURIComponent(self.db.name), 'id':DDOC_ID, 'create':true}, add_queue, queue_added)
+  })
 
-  function go(er) {
-    if(er) return callback(er);
+  function add_queue(ddoc, to_txn) {
+    //self.log.debug('Add queue to ddoc: %j', ddoc)
+    var now = new Date
 
-    var req = { method: 'PUT'
-              , uri   : lib.enc_id(ddoc._id)
-              , json  : ddoc
-              }
+    if(!ddoc._rev)
+      ddoc = new queue_ddoc.DDoc
 
-    //console.error('Storing\n' + util.inspect(ddoc));
-    self.db.request(req, function(er, resp, body) {
-      if(er) return callback(er);
+    ddoc.queues[self.name] = ddoc.queues[self.name] ||
+      { ApproximateNumberOfMessages          : 0
+      , ApproximateNumberOfMessagesNotVisible: 0
+      , VisibilityTimeout                    : self.VisibilityTimeout || 30
+      , CreatedTimestamp                     : now
+      , LastModifiedTimestamp                : now
+      , Policy                               : null
+      , MaximumMessageSize                   : 8192
+      , MessageRetentionPeriod               : 345600
+      , QueueArn                             : null
+      }
 
-      // Consider myself confirmed as well.
-      self.db.known_queues[self.name] = new lib.Once;
-      self.db.known_queues[self.name].job(function(done) { done(null, ddoc) });
-      self.import_ddoc(ddoc);
-      return callback(null, self.name);
-    })
+    if(!self.browser_attachments)
+      return to_txn(null, ddoc)
+    else
+      ddoc.add_browser(function(er) {
+        return to_txn(er, ddoc)
+      })
+  }
+
+  function queue_added(er, new_ddoc) {
+    if(er)
+      return callback(er)
+
+    self.log.debug('new_ddoc: %j', new_ddoc._id)
+    self.log.debug('Created queue: ' + self.name)
+
+    // Consider myself confirmed as well.
+    self.db.known_queues[self.name] = new lib.Once
+    self.db.known_queues[self.name].job(function(done) { done(null, new_ddoc) })
+    self.import_ddoc(new_ddoc)
+    callback(null, self.name)
   }
 }
 
@@ -137,7 +162,7 @@ Queue.prototype.import_ddoc = function(ddoc) {
   var self = this;
   self.ddoc_id = ddoc._id;
   self.ddoc_rev = ddoc._rev;
-  lib.copy(ddoc, self, 'uppercase');
+  lib.copy(ddoc.queues[self.name], self, 'uppercase');
 }
 
 
@@ -187,8 +212,8 @@ Queue.prototype.receive = function(opts, callback) {
   self.confirmed(function(er) {
     if(er) return callback(er);
 
-    var startkey = lib.JS([ "" ]);
-    var endkey   = lib.JS([ new Date ]); // Anything becoming visible up to now.
+    var startkey = lib.JS([ self.name, "" ]);
+    var endkey   = lib.JS([ self.name, new Date ]); // Anything becoming visible up to now.
     var query = querystring.stringify({ reduce: false
                                       , limit : msg_count
                                       , startkey: startkey
@@ -225,7 +250,7 @@ Queue.prototype.receive = function(opts, callback) {
 
       view.rows.forEach(function(row, i) {
         var match = new RegExp('^CQS/' + self.name + '/' + '(.+)$').exec(row.value._id);
-        assert.ok(match, "Bad view row: " + lib.JS(row));
+        assert.ok(match, "Bad view row: " + lib.JS(row)); // TODO: This does not belong in async code.
 
         var msg_opts = {};
         lib.copy(row.value, msg_opts, 'uppercase');
@@ -249,18 +274,13 @@ Queue.prototype.set = function set_attrs(opts, callback) {
   assert.ok(callback);
   assert.equal(typeof opts, 'object');
 
+  opts = lib.JDUP(opts)
+
   self.log.debug('Set attributes: ' + self.name);
   self.confirmed('--force', function(er) {
-    if(er) return callback(er);
+    if(er)
+      return callback(er)
 
-    var ddoc = new queue_ddoc.DDoc(self);
-    ddoc._rev = self.ddoc_rev;
-    lib.copy(opts, ddoc, 'uppercase');
-
-    if(self.browser_attachments)
-      ddoc.add_browser(go);
-    else
-      go();
 
     function go(er) {
       if(er) return callback(er);
@@ -271,15 +291,40 @@ Queue.prototype.set = function set_attrs(opts, callback) {
                 }
       self.db.request(req, function(er, resp, body) {
         if(er) return callback(er);
-
-        // SetAttributes was committed, consider myself confirmed as well.
-        self.db.known_queues[self.name] = new lib.Once;
-        self.db.known_queues[self.name].job(function(done) { done(null, ddoc) });
-        self.import_ddoc(ddoc);
-        return callback(null);
       })
     }
   })
+
+  self.db.confirmed(function(er) {
+    if(er)
+      return callback(er)
+    txn({'couch':self.db.couch.url, 'db':encodeURIComponent(self.db.name), 'id':DDOC_ID}, update_attrs, attrs_updated)
+  })
+
+  function update_attrs(ddoc, to_txn) {
+    //self.log.debug('Update queue on ddoc: %j', ddoc)
+    var now = new Date
+      , queue = ddoc.queues[self.name]
+
+    lib.copy(opts, queue, 'uppercase');
+    queue.LastModifiedTimestamp = now
+
+    if(!self.browser_attachments)
+      return to_txn()
+    else
+      ddoc.add_browser(to_txn)
+  }
+
+  function attrs_updated(er, new_ddoc) {
+    if(er)
+      return callback(er)
+
+    // SetAttributes was committed, consider myself confirmed as well.
+    self.db.known_queues[self.name] = new lib.Once;
+    self.db.known_queues[self.name].job(function(done) { done(null, new_ddoc) });
+    self.import_ddoc(new_ddoc);
+    callback(null)
+  }
 }
 
 
@@ -336,35 +381,26 @@ function list_queues(opts, cb) {
   if(!cb && opts._func)
     cb = opts._func;
 
-  var startkey = '_design/CQS\/';
-  var endkey   = '_design/CQS\/';
+  prefix = new RegExp('^' + (prefix || ""))
 
-  if(prefix) {
-    startkey += prefix;
-    endkey   += prefix;
-  }
+  var ddoc_url = opts.couch + '/' + encodeURIComponent(opts.db) + '/' + lib.enc_id(DDOC_ID)
+  lib.req_json({'url':ddoc_url, time_C:opts.time_C}, function(er, res) {
+    if(er)
+      return cb(er)
 
-  endkey += '\ufff0';
+    var queues = Object.keys(res.body.queues)
+      .filter(function(name) { return !! name.match(prefix) })
+      .map(get_queue)
 
-  var query = { startkey: lib.JS(startkey)
-              , endkey  : lib.JS(endkey)
-              };
+    return cb(null, queues)
 
-  var db_url = opts.couch + '/' + opts.db;
-  var view = db_url + '/_all_docs?' + querystring.stringify(query);
-  lib.req_json({uri:view, time_C:opts.time_C}, function(er, resp, view) {
-    if(er) return cb(er);
-
-    function get_queue(row) {
+    function get_queue(name) {
       return new Queue({ couch: opts.couch
                        , db   : opts.db
-                       , name : id_to_name(row.id)
+                       , name : name
                        , time_C: opts.time_C
                        })
     }
-
-    var queues = view.rows.map(get_queue);
-    return cb(null, queues);
   })
 }
 
@@ -439,11 +475,5 @@ module.exports = { "Queue" : Queue
 // Utilities
 //
 
-function id_to_name(id) {
-  var match = QUEUE_DDOC_ID_RE.exec(id);
-  if(!match)
-    throw new Error("Unknown queue ddoc id: " + id);
-  return match[1];
-}
 
 }) // defaultable

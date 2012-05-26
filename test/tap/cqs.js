@@ -162,12 +162,6 @@ test('Receive message', function(t) {
     // Deliberately leaving this message in the queue, to help expose errors,
     // such as incomplete timeouts.
     t.end()
-
-    //msg.del(function(er) {
-    //  delete state.message_one;
-    //  t.notOk(er, 'Delete the received message')
-    //  t.end()
-    //})
   })
 })
 
@@ -211,7 +205,9 @@ test('Make sure new message has the attributes', function(t) {
 test('Delete message', function(t) {
   var now = new Date;
   var vis_at = state.half_sec.visible_at;
-  t.ok(vis_at);
+  if(!vis_at)
+    throw new Error('Missing "half_sec" message in testing state')
+
   t.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
 
   cqs.DeleteMessage(state.half_sec, function(er) {
@@ -302,14 +298,14 @@ test('Get queue attributes', function(t) {
   cqs.GetQueueAttributes('bar', function(er, attrs) {
     if(er) throw er;
 
-    t.equal(attrs.VisibilityTimeout, state.bar.VisibilityTimeout, "Should be bar's visibility timeout");
-    t.equal(attrs.VisibilityTimeout,                         111, "Should be bar's visibility timeout");
+    t.equal(attrs.VisibilityTimeout, state.bar.VisibilityTimeout, "Should be bar's visibility timeout (state)")
+    t.equal(attrs.VisibilityTimeout,                         111, "Should be bar's visibility timeout (hard-coded)")
 
     cqs.GetQueueAttributes(state.foo, '--force', ['all'], function(er, attrs) {
       if(er) throw er;
 
-      t.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be bar's visibility timeout");
-      t.equal(attrs.VisibilityTimeout,                         1.5, "Should be bar's visibility timeout");
+      t.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be foo's visibility timeout (state)")
+      t.equal(attrs.VisibilityTimeout,                         1.5, "Should be foo's visibility timeout (hard-coded)")
 
       t.end()
     })

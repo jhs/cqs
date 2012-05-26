@@ -23,6 +23,14 @@ var fs = require('fs')
   , assert = require('assert')
   ;
 
+
+module.exports = { "DDoc" : DDoc
+
+                 // For importing and unit testing.
+                 , 'validate_doc_update': validate_doc_update
+                 , 'visible_at'         : visible_at
+                 }
+
 //
 // Constants
 //
@@ -30,15 +38,7 @@ var fs = require('fs')
 var TEMPLATE =
   // _id
   // _rev
-{ ApproximateNumberOfMessages          : 0
-, ApproximateNumberOfMessagesNotVisible: 0
-, VisibilityTimeout                    : 30
-, CreatedTimestamp                     : null
-, LastModifiedTimestamp                : null
-, Policy                               : null
-, MaximumMessageSize                   : 8192
-, MessageRetentionPeriod               : 345600
-, QueueArn                             : null
+{ 'queues': {}
 
 , views: { "visible_at": { map: visible_at
                          , reduce: '_count'
@@ -46,23 +46,25 @@ var TEMPLATE =
          }
 
 , "validate_doc_update": validate_doc_update
-
-// Utilities
-, "is_list_equal": is_list_equal
 }
 
+
 function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
-  var ddoc = this;
-  var NAME = "XXX_name_XXX";
+  var ddoc = this
+  var msg_id_re = /^CQS\/(.+?)\/([0-9a-f]{32})($|\/(.*)$)/
 
-  var my_msg_id = XXX_my_msg_id_XXX;
+  if(! newDoc._id.match(/^CQS\//)) // A simple test, hopefully future-proof
+    throw {'forbidden': 'This database is for CQS only'}
 
-  if(! /^CQS\//.test(newDoc._id)) // A simple test, hopefully future-proof
-    throw({forbidden: "This database is for CQS only"});
+  var match = newDoc._id.match(msg_id_re)
+  if(!match)
+    throw {'forbidden':'Invalid message id'}
 
-  var msg_id = my_msg_id(newDoc); // Message ID is the part within the queue namespace.
-  if(!msg_id)
-    return; // Another ddoc will handle this validation.
+  var queue_id = match[1]
+    , msg_id   = match[2]
+
+  if(! (queue_id in ddoc.queues))
+    throw {'forbidden':'Invalid queue: '+queue_id}
 
   var IS_DB_ADMIN = false;
 
@@ -72,7 +74,6 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 
   if(userCtx.roles.indexOf('_admin') !== -1)
     IS_DB_ADMIN = true;
-
   if(secObj.admins.names.indexOf(userCtx.name) !== -1)
     IS_DB_ADMIN = true;
   for(i = 0; i < userCtx.roles; i++)
@@ -127,43 +128,36 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 }
 
 function visible_at(doc) {
-  var NAME = "XXX_name_XXX";
-  var my_msg_id = XXX_my_msg_id_XXX;
-  var key, val, a;
+  var msg_id_re = /^CQS\/(.+?)\/([0-9a-f]{32})($|\/(.*)$)/
 
-  var msg_id = my_msg_id(doc);
-  if(msg_id && doc.visible_at) {
-    key = [doc.visible_at];
+  var match = doc._id.match(msg_id_re)
+  if(!match || !doc.visible_at)
+    return
 
-    // The client must be able to check out ("receive") the message using this view data,
-    // which means MVCC stuff and anything else necessary.
-    val = {"_id":doc._id, "_rev":doc._rev};
-    for(a in doc)
-      if(/^[A-Z]/.test(a))
-        val[a] = doc[a];
+  var queue_id = match[1]
+    , msg_id   = match[2]
 
-    emit(key, val);
-  }
+  // The client must be able to check out ("receive") the message using this view data,
+  // which means MVCC stuff and anything else necessary.
+  var val = {"_id":doc._id, "_rev":doc._rev};
+  for(var a in doc)
+    if(a.match(/^[A-Z]/))
+      val[a] = doc[a]
+
+  var key = [queue_id, doc.visible_at]
+  emit(key, val)
 }
 
 //
 // API
 //
 
-function DDoc (queue) {
+function DDoc () {
   var self = this;
-  var now = new Date;
 
-  assert.ok(queue.name);
-  assert.ok(queue.VisibilityTimeout);
-
-  self.name = queue.name;
   self.copy_template();
 
-  self._id = "_design/CQS/" + queue.name;
-  self.CreatedTimestamp = now;
-  self.LastModifiedTimestamp = now;
-  self.VisibilityTimeout = queue.VisibilityTimeout;
+  self._id = "_design/cqs"
 }
 
 // One common logger for them all, just so it won't get stored in couch.
@@ -173,10 +167,10 @@ DDoc.prototype.log.setLevel(lib.LOG_LEVEL);
 DDoc.prototype.copy_template = function() {
   var self = this;
 
-  if(self.name.length < 1 || self.name.length > 80)
-    throw new Error("Queue name exceeds length max of 80: " + self.name.length)
+//  if(self.name.length < 1 || self.name.length > 80)
+//    throw new Error("Queue name exceeds length max of 80: " + self.name.length)
 
-  var ddoc = templated_ddoc(self.name);
+  var ddoc = templated_ddoc()
   lib.copy(ddoc, self);
 }
 
@@ -308,20 +302,15 @@ DDoc.prototype.add_browser = function(callback) {
 }
 
 
-module.exports = { "DDoc" : DDoc
-                 };
-
-
 //
 // Utilities
 //
 
 function templated_ddoc(name) {
-  var for_this_ddoc = func_from_template(my_msg_id, {name:name});
-
+  return stringify_functions(TEMPLATE)
   function stringify_functions(obj) {
     var copy = {};
-    
+
     if(Array.isArray(obj))
       return obj.map(stringify_functions)
 
@@ -333,57 +322,18 @@ function templated_ddoc(name) {
     }
 
     else if(typeof obj === 'function')
-      return func_from_template(obj, {name:name, my_msg_id:for_this_ddoc});
+      return func_from_template(obj)
 
     else
       return lib.JDUP(obj);
   }
-
-  return stringify_functions(TEMPLATE);
 }
 
-function func_from_template(func, vals) {
-  var name = vals.name;
-  if(!name || typeof name !== 'string')
-    throw new Error('Invalid queue name: ' + util.inspect(name));
-
+function func_from_template(func) {
   var src = func.toString();
   src = src.replace(/^function.*?\(/, 'function (');
-
-  src = src.replace(/XXX_(.*?)_XXX/g, function(match, key) {
-    return vals[key];
-  })
   return src;
 }
 
-function my_msg_id(doc) {
-  var for_me = /^CQS\/XXX_name_XXX\/(.*)$/;
-  var match = for_me.exec(doc._id);
-  if(!match)
-    return null;
-
-  var msg_id = match[1];
-  match = /^([0-9a-f]{32})($|\/(.*)$)/.exec(msg_id);
-  if(!match)
-    throw({forbidden: "Invalid message id: " + msg_id});
-
-  return {'id':match[1], 'extra':match[3]};
-}
-
-function is_list_equal(a, b) {
-  if(a.length !== b.length)
-    return false;
-
-  var i, result;
-  for(i = 0; i < a.length; i++) {
-    if(Array.isArray(a[i]) && Array.isArray(b[i]))
-      result = is_list_equal(a[i], b[i]);
-    else
-      result = (a[i] === b[i]);
-    if(! result)
-      return false;
-  }
-  return true;
-}
 
 }) // defaultable
