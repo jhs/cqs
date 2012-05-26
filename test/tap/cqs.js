@@ -17,7 +17,6 @@ var test = tap.test
 var util = require('util'), I = util.inspect
 var request = require('request')
 
-
 var lib = require('../../lib')
   , COUCH = process.env.cqs_couch || 'http://localhost:5984'
   , DB    = process.env.cqs_db    || 'cqs_test'
@@ -30,7 +29,7 @@ var time_C = parseFloat("" + (process.env.timeout_coefficient || process.env.C |
 var cqs = require('../../api').defaults({ 'couch' : COUCH
                                         , 'db'    : DB
                                         , 'time_C': time_C
-                                        , browser_attachments: !(process.env.skip_browser)
+                                        , browser_attachments: !! process.env.test_browser
                                         })
 var state = {};
 
