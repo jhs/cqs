@@ -64,7 +64,7 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
     , msg_id   = match[2]
 
   if(! (queue_id in ddoc.queues))
-    throw {'forbidden':'Invalid queue: '+queue_id}
+    throw {'forbidden':'Queue does not exist: '+queue_id}
 
   var IS_DB_ADMIN = false;
 

@@ -98,8 +98,15 @@ Queue.prototype.confirmed = function after_confirmed(opt, callback) {
     self.db.request(lib.enc_id(DDOC_ID), function(er, res) {
       if(er)
         return done(er)
-      if(! (self.name in res.body.queues))
-        return done(new Error('Queue does not exist: ' + self.name))
+
+      if(! (self.name in res.body.queues)) {
+        if(opt != '--allow-missing')
+          return done(new Error('Queue does not exist: ' + self.name))
+
+        self.log.warn('Using non-existent queue: ' + self.name)
+        res.body.queues[self.name] = {}
+      }
+
       done(null, res.body)
     })
   }

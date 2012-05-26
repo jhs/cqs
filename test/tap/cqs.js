@@ -141,6 +141,24 @@ test('Send message', function(t) {
   })
 })
 
+test('Message sending failures', function(t) {
+  cqs.SendMessage('bad_queue', 'Message for non-existent queue', function(er) {
+    t.ok(er, 'Got an error sending a message to a non-existent queue')
+    t.equal(er.message, 'Queue does not exist: bad_queue', 'Useful error message sending to non-queue')
+
+    var non_queue = new cqs.Queue('bad_queue_2')
+    non_queue.confirmed('--allow-missing', function(er) {
+      t.notOk(er, 'No problem confirming missing queue with --allow-missing')
+      non_queue.send('Another message for non-queue', function(er) {
+        t.ok(er, 'Failure creating a message for non-queue with --allow-missing')
+        t.equal(er.statusCode, 403, 'CouchDB 403 forbidden (invalid change) creating message for a non-queue')
+        t.equal(er.reason, 'Queue does not exist: bad_queue_2', 'Useful CouchDB error message when sending to a non-queue')
+        t.end()
+      })
+    })
+  })
+})
+
 test('Receive no message', function(t) {
   cqs.ReceiveMessage(state.foo, function(er, messages) {
     if(er) throw er;
