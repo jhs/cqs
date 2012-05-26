@@ -190,8 +190,8 @@ DDoc.prototype.add_browser = function(callback) {
     return callback();
   }
 
-  var home = path.dirname(module.filename)
-    , include_dirs = [ home 
+  var home = __dirname
+    , include_dirs = [ home
                      , home + '/test'
                      , home + '/test/browser/node'
                      , home + '/test/browser'

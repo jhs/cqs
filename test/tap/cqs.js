@@ -1,33 +1,40 @@
-// The changes_couchdb command-line interface.
+// CQS tests
 //
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-var COUCH = process.env.cqs_couch || 'http://localhost:5984';
-var DB    = process.env.cqs_db    || 'cqs_test';
+var tap = require('./tap')
+var test = tap.test
+var util = require('util'), I = util.inspect
+var request = require('request')
+
+
+var lib = require('../../lib')
+  , COUCH = process.env.cqs_couch || 'http://localhost:5984'
+  , DB    = process.env.cqs_db    || 'cqs_test'
 
 if(process.env.charles)
   COUCH = 'http://jhs-mac.local:15984';
   //COUCH = 'http://192.168.3.10:15984';
 
-if(require.isBrowser) {
-  COUCH = window.location.protocol + '//' + window.location.host;
-  DB    = 'cqs_browser_test';
-}
-
 var time_C = parseFloat("" + (process.env.timeout_coefficient || process.env.C || 1.0));
-var cqs = require('../api').defaults({ 'couch' : COUCH
-                                     , 'db'    : DB
-                                     , 'time_C': time_C
-                                     , browser_attachments: !(process.env.skip_browser)
-                                     })
-  , util = require('util'), I = util.inspect
-  , assert = require('assert')
-  , request = require('request')
-  ;
-
+var cqs = require('../../api').defaults({ 'couch' : COUCH
+                                        , 'db'    : DB
+                                        , 'time_C': time_C
+                                        , browser_attachments: !(process.env.skip_browser)
+                                        })
 var state = {};
-module.exports = [ // TESTS
 
-function setup(done) {
+test('CQS setup', function(t) {
   var url = COUCH + '/' + DB;
   request({method:'DELETE', uri:url}, function(er, resp, body) {
     if(er) throw er;
@@ -46,142 +53,142 @@ function setup(done) {
       if(resp.statusCode !== 201 || json.ok !== true)
         throw new Error('Unknown PUT response: ' + resp.statusCode + ' ' + body);
 
-      done();
+      t.ok(true, 'Set up CQS test environment')
+      t.end()
     })
   })
-},
+})
 
-// =-=-=-=-=-=-=-=-=
-
-function create_queue(done) {
+test('Create queue', function(t) {
   cqs.CreateQueue('foo', function(er, queue) {
-    if(er) return done(er);
-    assert.equal(queue.name, 'foo', "CreateQueue returns the queue name");
+    if(er) throw er
+    t.equal(queue.name, 'foo', "CreateQueue returns the queue name");
     state.foo = queue;
     state.log = state.foo.log;
-    done();
+    t.end()
   })
-},
+})
 
-function create_queue_with_obj(done) {
+test('Create queue with object', function(t) {
   cqs.CreateQueue({name:'bar', DefaultVisibilityTimeout:111}, function(er, queue) {
-    if(er) return done(er);
-    assert.equal(queue.name, 'bar', "CreateQueue returns the queue name");
-    assert.equal(queue.VisibilityTimeout, 111, "Created with visibility 111");
+    if(er) throw er
+    t.equal(queue.name, 'bar', "CreateQueue returns the queue name");
+    t.equal(queue.VisibilityTimeout, 111, "Created with visibility 111");
     state.bar = queue;
-    done();
+    t.end()
   })
-},
+})
 
-function instantiate_queue_loads_from_cache(done) {
+test('Instantiating a queue loads from cache', function(t) {
   var should_be_bar = new cqs.Queue('bar');
   var start_at = new Date;
   should_be_bar.confirm(function(er) {
-    if(er) throw er;
+    if(er) throw er
     var end_at = new Date;
 
-    assert.equal(should_be_bar.VisibilityTimeout, 111, "Should get bar's visibility timeout");
-    assert.equal(should_be_bar.VisibilityTimeout, state.bar.VisibilityTimeout, "Should get bar's visibility timeout");
-    assert.ok(end_at - start_at < 20, "Bar should be known from cache within 50ms");
-    done();
+    t.equal(should_be_bar.VisibilityTimeout, 111, "Should get bar's visibility timeout");
+    t.equal(should_be_bar.VisibilityTimeout, state.bar.VisibilityTimeout, "Should get bar's visibility timeout");
+    t.ok(end_at - start_at < 20, "Bar should be known from cache within 50ms");
+    t.end()
   })
-},
+})
 
-function list_queues(done) {
+test('List queues', function(t) {
   cqs.ListQueues(function(er, queues) {
     if(er) throw er;
-    assert.equal(2, queues.length);
+    t.equal(2, queues.length);
 
-    assert.any(queues, "Queue list should include foo", function(q) { return q.name == 'foo' });
-    assert.any(queues, "Queue list should include bar", function(q) { return q.name == 'bar' });
-    done();
+    t.any(queues, "Queue list should include foo", function(q) { return q.name == 'foo' });
+    t.any(queues, "Queue list should include bar", function(q) { return q.name == 'bar' });
+    t.end()
   })
-},
+})
 
-function list_queues_with_prefix(done) {
+test('List queues with prefix', function(t) {
   cqs.ListQueues('f', function(er, queues) {
     if(er) throw er;
-    assert.equal(1, queues.length);
+    t.equal(1, queues.length);
 
     function is_foo(q) { return q.name == 'foo' }
     function is_bar(q) { return q.name == 'bar' }
 
-    assert.none(queues, "Queues should not have bar", is_bar);
-    assert.any(queues , "Queues should have foo"    , is_foo);
+    t.none(queues, "Queues should not have bar", is_bar);
+    t.any(queues , "Queues should have foo"    , is_foo);
 
     cqs.ListQueues('b', function(er, queues) {
       if(er) throw er;
-      assert.equal(1, queues.length);
-      assert.none(queues, "Queues should not have foo", is_foo);
-      assert.any(queues , "Queues should have bar"    , is_bar);
-      done();
+      t.equal(1, queues.length);
+      t.none(queues, "Queues should not have foo", is_foo);
+      t.any(queues , "Queues should have bar"    , is_bar);
+      t.end()
     })
   })
-},
+})
 
-function send_message(done) {
+test('Send message', function(t) {
   state.bar.send({this_is:'Message one'}, function(er, msg) {
     if(er) throw er;
 
     // TODO: confirm MD5.
 
     ; ["Body", "MD5OfMessageBody", "MessageId"].forEach(function(key) {
-      assert.ok(key in msg, "SendMessage result needs key: " + key);
+      t.ok(key in msg, "SendMessage result needs key: " + key);
     })
 
-    assert.equal(msg.Body.this_is, 'Message one', "Message body should be what was sent");
+    t.equal(msg.Body.this_is, 'Message one', "Message body should be what was sent");
 
     state.message_one = msg;
-    done();
+    t.end()
   })
-},
+})
 
-function receive_no_message(done) {
+test('Receive no message', function(t) {
   cqs.ReceiveMessage(state.foo, function(er, messages) {
     if(er) throw er;
 
-    assert.equal(messages.length, 0, 'Foo queue should not have any messages yet');
-    done();
+    t.equal(messages.length, 0, 'Foo queue should not have any messages yet');
+    t.end()
   })
-},
+})
 
-function receive_message(done) {
+test('Receive message', function(t) {
   state.bar.receive(function(er, messages) {
     if(er) throw er;
 
-    assert.equal(messages.length, 1, 'Bar queue should have message from earlier');
+    t.equal(messages.length, 1, 'Bar queue should have message from earlier');
     var msg = messages[0];
-    assert.equal(msg.Body.this_is, state.message_one.Body.this_is, "Message should be message one's body");
-    assert.equal(msg.Body.this_is, 'Message one'                 , "Message should be message one's body");
+    t.equal(msg.Body.this_is, state.message_one.Body.this_is, "Message should be message one's body");
+    t.equal(msg.Body.this_is, 'Message one'                 , "Message should be message one's body");
 
     // Deliberately leaving this message in the queue, to help expose errors,
     // such as incomplete timeouts.
-    done();
+    t.end()
 
-    if(false) msg.del(function(er) {
-      delete state.message_one;
-      done(er);
-    })
+    //msg.del(function(er) {
+    //  delete state.message_one;
+    //  t.notOk(er, 'Delete the received message')
+    //  t.end()
+    //})
   })
-},
+})
 
-function set_queue_attribs(done) {
+test('Set queue attributes', function(t) {
   cqs.SetQueueAttributes(state.foo, {'VisibilityTimeout':1.5}, function(er) {
     if(er) throw er;
 
-    assert.equal(state.foo.VisibilityTimeout, 1.5, "Foo should have 1.5 second visibility now");
+    t.equal(state.foo.VisibilityTimeout, 1.5, "Foo should have 1.5 second visibility now");
     new cqs.Queue('foo').confirmed(function(er, foo2) {
       if(er) throw er;
 
-      assert.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 1.5");
-      assert.equal(foo2.VisibilityTimeout,                         1.5, "Both foos should be 1.5");
+      t.equal(foo2.VisibilityTimeout, state.foo.VisibilityTimeout, "Both foos should be 1.5");
+      t.equal(foo2.VisibilityTimeout,                         1.5, "Both foos should be 1.5");
 
-      done();
+      t.end()
     })
   })
-},
+})
 
-function make_sure_new_message_has_the_attributes(done) {
+test('Make sure new message has the attributes', function(t) {
   cqs.SendMessage(state.foo, "Should be 1.5 visibility timeout", function(er) {
     if(er) throw er;
     var before = new Date;
@@ -193,20 +200,20 @@ function make_sure_new_message_has_the_attributes(done) {
       msg = msg[0];
 
       var invisible_ms = (msg.visible_at - now) + (query_ms / 2);
-      assert.ok(invisible_ms > 1000, "Not-visible time (should be 1500): " + invisible_ms);
+      t.ok(invisible_ms > 1000, "Not-visible time (should be 1500): " + invisible_ms);
 
       state.half_sec = msg;
-      done();
+      t.end()
     })
   })
-},
+})
 
-{'timeout_coefficient': 10},
-function delete_message(done) {
+//{'timeout_coefficient': 10},
+test('Delete message', function(t) {
   var now = new Date;
   var vis_at = state.half_sec.visible_at;
-  assert.ok(vis_at);
-  assert.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
+  t.ok(vis_at);
+  t.ok(vis_at - now > 0, "Too late to run this test: " + (vis_at - now));
 
   cqs.DeleteMessage(state.half_sec, function(er) {
     if(er) throw er;
@@ -214,8 +221,8 @@ function delete_message(done) {
     function check() {
       cqs.ReceiveMessage('foo', function(er, msg) {
         if(er) throw er;
-        assert.equal(msg.length, 0, "Should be no more messages left: " + I(msg));
-        done();
+        t.equal(msg.length, 0, "Should be no more messages left: " + I(msg));
+        t.end()
       })
     }
 
@@ -225,10 +232,10 @@ function delete_message(done) {
     else
       setTimeout(check, remaining * 1.10);
   })
-},
+})
 
-{'timeout_coefficient': 2},
-function send_message_api(done) {
+//{'timeout_coefficient': 2},
+test('Send message API', function(t) {
   cqs.CreateQueue({name:'api_tests', DefaultVisibilityTimeout:60}, function(er, api_tests) {
     if(er) throw er;
     state.api_tests = api_tests;
@@ -241,40 +248,40 @@ function send_message_api(done) {
           if(er) throw er;
           api_tests.send('queue method call', function(er) {
             if(er) throw er;
-            done();
+            t.end()
           })
         })
       })
     })
   })
-},
+})
 
-{'timeout_coefficient': 2},
-function receive_message_api(done) {
+//{'timeout_coefficient': 2},
+test('Receive message API', function(t) {
   var messages = [];
 
   cqs.ReceiveMessage('api_tests', function(er, msg) {
     if(er) throw er;
-    assert.equal(msg.length, 1, "Should receive 1 message");
-    assert.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
+    t.equal(msg.length, 1, "Should receive 1 message");
+    t.equal(msg[0].Body, 'API with string arg', 'Messages should arrive in order');
 
     messages.push(msg[0]);
     cqs.ReceiveMessage(state.api_tests, 1, function(er, msg) {
       if(er) throw er;
-      assert.equal(msg.length, 1, "Should receive 1 message");
-      assert.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
+      t.equal(msg.length, 1, "Should receive 1 message");
+      t.equal(msg[0].Body, 'API with queue arg', 'Messages should arrive in order');
 
       messages.push(msg[0]);
       cqs.ReceiveMessage({queue:state.api_tests, 'MaxNumberOfMessages': 1}, function(er, msg) {
         if(er) throw er;
-        assert.equal(msg.length, 1, "Should receive 1 message");
-        assert.equal(msg[0].Body.call_type, 'Method with object body', 'Messages should arrive in order');
+        t.equal(msg.length, 1, "Should receive 1 message");
+        t.equal(msg[0].Body.call_type, 'Method with object body', 'Messages should arrive in order');
 
         messages.push(msg[0]);
         state.api_tests.receive(1, function(er, msg) {
           if(er) throw er;
-          assert.equal(msg.length, 1, "Should receive 1 message");
-          assert.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
+          t.equal(msg.length, 1, "Should receive 1 message");
+          t.equal(msg[0].Body, 'queue method call', 'Messages should arrive in order');
 
           messages.push(msg[0]);
 
@@ -283,52 +290,55 @@ function receive_message_api(done) {
             msg.del(function() {
               deleted += 1;
               if(deleted == 3)
-                done();
+                t.end()
             })
           })
         })
       })
     })
   })
-},
+})
 
-function get_queue_attributes(done) {
+test('Get queue attributes', function(t) {
   cqs.GetQueueAttributes('bar', function(er, attrs) {
     if(er) throw er;
 
-    assert.equal(attrs.VisibilityTimeout, state.bar.VisibilityTimeout, "Should be bar's visibility timeout");
-    assert.equal(attrs.VisibilityTimeout,                         111, "Should be bar's visibility timeout");
+    t.equal(attrs.VisibilityTimeout, state.bar.VisibilityTimeout, "Should be bar's visibility timeout");
+    t.equal(attrs.VisibilityTimeout,                         111, "Should be bar's visibility timeout");
 
     cqs.GetQueueAttributes(state.foo, '--force', ['all'], function(er, attrs) {
       if(er) throw er;
 
-      assert.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be bar's visibility timeout");
-      assert.equal(attrs.VisibilityTimeout,                         1.5, "Should be bar's visibility timeout");
+      t.equal(attrs.VisibilityTimeout, state.foo.VisibilityTimeout, "Should be bar's visibility timeout");
+      t.equal(attrs.VisibilityTimeout,                         1.5, "Should be bar's visibility timeout");
 
-      done();
+      t.end()
     })
   })
-},
+})
 
-function specify_message_id(done) {
+test('Specify message id', function(t) {
   var extra = 'the-extra-stuff-HERE';
   var body = {'about':'This needs the extra id', 'I expect':extra};
   cqs.SendMessage('foo', body, extra, function(er, sent) {
     if(er) throw er;
     var sent_extra = sent.MessageId.slice(sent.MessageId.length - extra.length);
-    assert.equal(sent_extra, extra, "Send with extra id field: " + extra);
+    t.equal(sent_extra, extra, "Send with extra id field: " + extra);
 
     cqs.ReceiveMessage('foo', function(er, msg) {
       if(er) throw er;
 
       var received_extra = msg[0].MessageId.slice(msg[0].MessageId.length - extra.length);
-      assert.equal(received_extra, extra, "Should get the right ID extra: " + extra);
-      msg[0].del(done);
+      t.equal(received_extra, extra, "Should get the right ID extra: " + extra);
+      msg[0].del(function(er) {
+        t.notOk(er, 'Delete message with extra stuff')
+        t.end()
+      })
     })
   })
-},
+})
 
-function check_message_deletion(done) {
+test('Check message deletion', function(t) {
   state.foo.send('to be kept', function(er) {
     if(er) throw er;
     state.foo.send('to be deleted', function(er) {
@@ -336,19 +346,19 @@ function check_message_deletion(done) {
 
       state.foo.receive(2, function(er, msgs) {
         if(er) throw er;
-        assert.equal(msgs.length, 2, "Should get both messages");
+        t.equal(msgs.length, 2, "Should get both messages");
 
         var to_keep = msgs[0], to_del = msgs[1];
         to_del.del(function(er) {
           if(er) throw er;
           to_keep.update(function(er) {
             if(er) throw er;
-            assert.ok(! to_keep.deleted, "Kept message should not be deleted");
+            t.ok(! to_keep.deleted, "Kept message should not be deleted");
             to_del.update(function(er) {
               if(er) throw er;
-              assert.ok(to_del.deleted, "Other message should be deleted");
+              t.ok(to_del.deleted, "Other message should be deleted");
               to_keep.del(function() {
-                done();
+                t.end()
               })
             })
           })
@@ -356,9 +366,9 @@ function check_message_deletion(done) {
       })
     })
   })
-},
+})
 
-function change_message_time(done) {
+test('Change message time', function(t) {
   state.foo.send('to be changed 1', function(er) {
     if(er) throw er;
     state.foo.send('to be changed 2', function(er) {
@@ -368,7 +378,7 @@ function change_message_time(done) {
       var opts = {'MaxNumberOfMessages':2, 'VisibilityTimeout':60};
       state.foo.receive(opts, function(er, msgs) {
         if(er) throw er;
-        assert.equal(msgs.length, 2, "Should get both messages");
+        t.equal(msgs.length, 2, "Should get both messages");
 
         var end_at = new Date
           , txn_ms = end_at - begin_at
@@ -379,10 +389,10 @@ function change_message_time(done) {
           ;
 
         checkout_ms = msg1.visible_at - txn_at;
-        assert.almost(checkout_ms, 60000, "Message 1 receive should be 60s: " + checkout_ms);
+        t.almost(checkout_ms, 60000, "Message 1 receive should be 60s: " + checkout_ms);
 
         checkout_ms = msg2.visible_at - txn_at;
-        assert.almost(checkout_ms, 60000, "Message 2 receive should be 60s: " + checkout_ms);
+        t.almost(checkout_ms, 60000, "Message 2 receive should be 60s: " + checkout_ms);
 
         // Seconds style.
         var new_secs = 123;
@@ -395,8 +405,8 @@ function change_message_time(done) {
           txn_at = add(begin_at, txn_ms / 2);
           checkout_ms = new_msg1.visible_at - txn_at;
 
-          assert.equal(I(msg1.visible_at), I(new_msg1.visible_at), "Calling message and received message should have the same data");
-          assert.almost(checkout_ms, 123 * 1000, "Updated time should have 123 seconds remaining");
+          t.equal(I(msg1.visible_at), I(new_msg1.visible_at), "Calling message and received message should have the same data");
+          t.almost(checkout_ms, 123 * 1000, "Updated time should have 123 seconds remaining");
 
           // Timestamp style, also object style.
           begin_at = new Date;
@@ -409,13 +419,15 @@ function change_message_time(done) {
             txn_at = add(begin_at, txn_ms);
             checkout_ms = new_msg2.visible_at - txn_at;
 
-            assert.equal(I(msg2.visible_at), I(new_msg2.visible_at), "Calling message and received message need same data");
-            assert.equal(new_msg2.visible_at, new_time, "Message visible timestamp expected " + I(new_time) + ": " + I(new_msg2.visible_at));
-            assert.almost(checkout_ms, 321 * 1000, "checkout_ms expected 321 seconds: " + checkout_ms);
+            t.equal(I(msg2.visible_at), I(new_msg2.visible_at), "Calling message and received message need same data");
+            t.equal(new_msg2.visible_at, new_time, "Message visible timestamp expected "+I(new_time)+": "+I(new_msg2.visible_at))
+            t.almost(checkout_ms, 321 * 1000, "checkout_ms expected 321 seconds: " + checkout_ms);
 
             msg1.del(function(er) {
+              t.notOk(er, 'Delete message 1')
               msg2.del(function(er2) {
-                done(er || er2);
+                t.notOk(er2, 'Delete message 2')
+                t.end()
               })
             })
           })
@@ -429,14 +441,14 @@ function change_message_time(done) {
     res.setUTCMilliseconds(res.getUTCMilliseconds() + ms);
     return res;
   }
-},
+})
 
-function receive_conflict(done) {
+test('Receive conflict', function(t) {
   state.foo.send({hopefully:'Receive conflict!'}, function(er) {
     if(er) throw er;
 
     var real_request = state.foo.db.request;
-    assert.equal(typeof real_request, 'function', 'Need to cache request function');
+    t.equal(typeof real_request, 'function', 'Need to cache request function');
 
     // Force the same view result to come back to both receivers, so they attempt to receive the same message.
     var first_callback, recv_results = [];
@@ -449,9 +461,9 @@ function receive_conflict(done) {
       else if(opts.method == 'PUT' && opts.uri.match(/^CQS%2Ffoo%2F/i))
         run_type = 'recv';
 
-      assert.ok(run_type, 'Unknown query: ' + JSON.stringify(opts));
+      t.ok(run_type, 'Unknown query: ' + JSON.stringify(opts));
       runs[run_type] += 1;
-      assert.ok(runs[run_type] <= 2, 'Only 2 '+run_type+' runs allowed');
+      t.ok(runs[run_type] <= 2, 'Only 2 '+run_type+' runs allowed');
 
       if(run_type == 'find' && runs.find == 1)
         first_callback = callback; // Store this callback for later, to send it the same response as the next run.
@@ -489,23 +501,21 @@ function receive_conflict(done) {
     })
 
     function check_results(msgs1, msgs2, err1, err2) {
-      assert.equal(msgs1.length + msgs2.length, 1, 'One message between the two receive batches');
-      assert.ok(msgs1.length == 0 || msgs2.length == 0, 'One batch got no messages');
+      t.equal(msgs1.length + msgs2.length, 1, 'One message between the two receive batches');
+      t.ok(msgs1.length == 0 || msgs2.length == 0, 'One batch got no messages');
 
       var msg = msgs1[0] || msgs2[0];
-      assert.ok(msg, 'Got the message despite conflict');
-      assert.equal(msg.Body.hopefully, 'Receive conflict!', 'Got the correct message despite conflict');
+      t.ok(msg, 'Got the message despite conflict');
+      t.equal(msg.Body.hopefully, 'Receive conflict!', 'Got the correct message despite conflict');
 
-      assert.ok(err1 || err2, 'One of the receive requests should have returned an error');
-      assert.ok(!err1 || !err2, 'One of the receive request should have returned normally');
+      t.ok(err1 || err2, 'One of the receive requests should have returned an error');
+      t.ok(!err1 || !err2, 'One of the receive request should have returned normally');
 
       var err = err1 || err2;
-      assert.equal(err.statusCode, 409, 'The HTTP error should be 409');
-      assert.equal(err.error, 'conflict', 'The Couch error should be "conflict"');
+      t.equal(err.statusCode, 409, 'The HTTP error should be 409');
+      t.equal(err.error, 'conflict', 'The Couch error should be "conflict"');
 
-      done();
+      t.end()
     }
   })
-},
-
-] // TESTS
+})
