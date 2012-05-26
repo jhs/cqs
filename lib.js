@@ -26,7 +26,7 @@ exports.LOG_LEVEL = process.env.cqs_log_level || "info";
 function noop() {}
 exports.log4js = {'getLogger':function() { return new FauxLogger }}
 function FauxLogger () {
-  this.setLevel = this.debug = noop
+  this.setLevel = this.debug = this.info = this.warn = this.error = noop
 }
 
 // A workaround since defaultable seems to be breaking `instanceof` since it re-evaluates modules a lot.
