@@ -88,12 +88,14 @@ exports.req_json = function req_json(opts, callback) {
     var timeout_er = new Error('Request timeout (' + (duration/1000).toFixed(1) + 's): ' + opts.uri);
     timeout_er.timeout = duration;
 
-    //if(in_flight && in_flight.destroy)
-    //  in_flight.destroy()
     //if(in_flight && in_flight.response && in_flight.response.abort)
     //  in_flight.response.abort()
-    if(in_flight && in_flight.response.connection)
-      in_flight.response.connection.destroy()
+    //if(in_flight && in_flight.response.connection)
+    //  in_flight.response.connection.destroy()
+    if(in_flight && in_flight.req && in_flight.req.connection && in_flight.req.connection.destroy)
+      in_flight.req.connection.destroy()
+    if(in_flight && in_flight.destroy)
+      in_flight.destroy()
 
     callback(timeout_er);
   }
