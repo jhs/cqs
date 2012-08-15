@@ -117,12 +117,12 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
 
   if(oldDoc) {
     // Checkout ("receive")
-    if(newDoc.ReceiverId !== userCtx.name)
+    if(newDoc.ReceiverId !== userCtx.name && !IS_DB_ADMIN)
       throw({forbidden: 'Must set ReceiverId to your name: ' + JSON.stringify(userCtx.name)});
 
   } else {
     // Message send
-    if(newDoc.SenderId !== userCtx.name)
+    if(newDoc.SenderId !== userCtx.name && !IS_DB_ADMIN)
       throw({forbidden: 'Must set SenderId to your name: ' + JSON.stringify(userCtx.name)});
   }
 }
