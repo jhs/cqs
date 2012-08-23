@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/iriscouch/cqs.png)](http://travis-ci.org/iriscouch/cqs)
 # CouchDB Queue Service
 
 CQS is a message queue system, using Apache CouchDB. It is **exactly like** [Amazon Simple Queue Service (SQS)][sqs_api]. The API is the same. Everything is exactly the same, it just runs on CouchDB.
