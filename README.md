@@ -148,15 +148,17 @@ These parameters are useful with the `.defaults()` method to customize CQS behav
 
 ## Test Suite
 
-The test suite is plain old Javascript, nothing fancy. Just run the `run.js` command in Node.
+The test suite uses node-tap. Install tap via `npm install -g tap` then run `tap test/tap` in this project.
 
-    $ node test/run.js
-    ..................
+    $ tap test/tap
+    ok test/tap/couch.js ............................ 12368/12368
+    ok test/tap/cqs.js .................................... 82/82
+    ok test/tap/lib.js .................................... 11/11
+    ok test/tap/once.js ............................. 10007/10007
+    ok test/tap/tap.js ...................................... 1/1
+    total ........................................... 22469/22469
 
-    Pass   : 18
-    Fail   : 0
-    Timeout: 0
-    Skip   : 0
+    ok
 
 Use environment variables to set operational parameters, for example:
 
