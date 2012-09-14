@@ -95,6 +95,7 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
   if(self.userCtx && self.known_dbs)
     return callback();
 
+  self.url = self.url.replace(/\/+$/, '')
   var confirmer = KNOWN_COUCHES[self.url];
   if(!confirmer)
     confirmer = KNOWN_COUCHES[self.url] = new lib.Once;
