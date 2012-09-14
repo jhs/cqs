@@ -30,9 +30,9 @@ var lib = require('./lib')
   , util = require('util')
   , events = require('events')
   , assert = require('assert')
+  , follow = require('follow')
   , request = require('request')
   , querystring = require('querystring')
-  ;
 
 //
 // Constants
@@ -170,6 +170,17 @@ Database.prototype.request = function(opts, callback) {
 
     self.couch.request(opts, callback);
   })
+}
+
+
+Database.prototype.changes = function(opts) {
+  var self = this
+
+  if(typeof opts != 'object')
+    opts = {}
+
+  opts.db = self.couch.url + '/' + self.name
+  return new follow.Feed(opts)
 }
 
 

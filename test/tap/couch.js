@@ -35,6 +35,12 @@ test('API', function(t) {
   var db = new cqs.Db;
   t.ok(db, 'Database object API')
   t.ok(db.couch, 'Database has a .couch object')
+
+  t.type(db.changes, 'function', 'Database has a .changes() method')
+  var feed = db.changes()
+  t.type(feed.start, 'function', 'Feed object looks good')
+  t.equal(feed.db, COUCH+'/'+DB, 'Feed object has the correct DB set')
+
   t.end()
 })
 
