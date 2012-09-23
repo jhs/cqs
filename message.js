@@ -283,7 +283,7 @@ Message.prototype.del = function message_del(callback) {
     if(er)
       self.log.info('Failed to delete ' + id + ': ' + er.message);
 
-    if(result.ok !== true)
+    if(!result || result.ok !== true)
       self.log.info('Unknown response to delete' + lib.JS(result));
 
     Object.keys(self).forEach(function (key) {
