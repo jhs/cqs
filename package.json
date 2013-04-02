@@ -9,7 +9,7 @@
                 , "url": "git://github.com/iriscouch/cqs" }
 , "engines": [ "node" ]
 
-, "dependencies"   : { "request" : "~2.9.0"
+, "dependencies"   : { "request" : "~2.16.6"
                      , "defaultable": "0.7.2"
                      , "follow": "~0.8.0"
                      , "log4js": "~0.5.4"
