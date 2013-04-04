@@ -15,9 +15,10 @@
 require('defaultable')(module,
   { 'request_timeout': 5000
   , 'log_module'     : null
+  , 'strictSSL'      : true
   }, function(module, exports, DEFS, require) {
 
-var request = require('request')
+var request = require('request').defaults({'strictSSL': DEFS.strictSSL})
   , events = require('events')
 
 exports.log4js = DEFS.log_module || require('log4js')

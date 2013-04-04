@@ -31,7 +31,6 @@ var lib = require('./lib')
   , events = require('events')
   , assert = require('assert')
   , follow = require('follow')
-  , request = require('request')
   , querystring = require('querystring')
 
 //

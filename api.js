@@ -14,6 +14,7 @@
 
 require('defaultable')(module,
   { 'time_C': 1.0
+  , 'strictSSL': true
   }, function(module, exports, DEFS, require) {
 
 var lib = require('./lib')
