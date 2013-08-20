@@ -10,6 +10,7 @@
 , "engines": [ "node" ]
 
 , "dependencies"   : { "request" : "~2.16.6"
+                     , "browser-request" : "~0.2"
                      , "defaultable": "0.7.2"
                      , "follow": "~0.8.0"
                      , "log4js": "~0.5.4"
@@ -18,5 +19,7 @@
 
 , "devDependencies": { "tap": "~0.2.5"
                      }
+, "browser": { "request" : "browser-request"
+             }
 , "main": "./api"
 }
