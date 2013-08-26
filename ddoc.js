@@ -29,6 +29,7 @@ module.exports = { "DDoc" : DDoc
                  // For importing and unit testing.
                  , 'validate_doc_update': validate_doc_update
                  , 'visible_at'         : visible_at
+                 , 'enqueue_message'    : enqueue_message
                  }
 
 //
@@ -40,12 +41,58 @@ var TEMPLATE =
   // _rev
 { 'queues': {}
 
+, updates: {"queue": enqueue_message}
 , views: { "visible_at": { map: visible_at
                          , reduce: '_count'
                          }
          }
 
 , "validate_doc_update": validate_doc_update
+}
+
+
+function enqueue_message(doc, req) {
+  if(req.method != 'POST')
+    return resp(400, {'error':'Only POST is allowed'})
+
+  if(doc)
+    return resp(400, {'error':'Only creating new messages is allowed'})
+
+  try {
+    var body = JSON.parse(req.body)
+  } catch (er) {
+    return resp(400, {'error':'Bad JSON body'})
+  }
+
+  // Figure out the queue to update, from .../_update/this_function/queue_name
+  var i = req.path.indexOf('_update')
+  var queue = req.path[i+2]
+
+  var now = new Date
+  doc =
+    { _id: 'CQS/' + queue + '/' + req.uuid
+    , ApproximateFirstReceiveTimestamp: null
+    , ApproximateReceiveCount         : 0
+    , Body                            : body
+    , SenderId                        : req.userCtx.name
+    , SentTimestamp                   : now
+    , visible_at                      : now
+    }
+
+  //log('Create CQS document: ' + JSON.stringify(doc))
+  return resp(201, doc)
+
+  function resp(code, body) {
+    if(code != 201)
+      doc = null
+
+    return [doc,
+      { 'code'   : code
+      , 'headers': {'content-type':'application/json'}
+      , 'body'   : JSON.stringify(body) + "\n"
+      }
+    ]
+  }
 }
 
 
