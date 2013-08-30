@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html><head>
+	<script src="http://code.jquery.com/jquery-latest.js"></script>
+	<meta charset=utf-8 />
+	<title>CQS queue overview</title>
+</head><body>
+	<form id="login">
+		<label for=user>User:</label>
+		<input type="text" name="user">
+		<label for=pass>Password:</label>
+		<input type=password name=pass>
+		<button type=submit>Go!</button>
+	</form>
+	<ul id="list"></ul>
+	<script src="browser.js"></script>
+	<script src="showlist.js"></script>
+	<script>
+		$("#login").on("submit", function(){
+		  var user = $("[name=user]").val(),
+		      pass = $("[name=pass]").val();
+		  
+		  showList(user, pass);
+		});
+		showlist();
+	</script>
+</body>
+</html>
