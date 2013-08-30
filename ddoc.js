@@ -179,11 +179,11 @@ DDoc.prototype.copy_template = function() {
 DDoc.prototype.add_browser = function(callback) {
   var counter = 0
 
-  ;['browser.min.js']
+  ;['cqs.min.js', 'showlist.js', 'index.html']
   .forEach(function(name) {
     counter++
 
-    fs.readFile(__dirname + '/' + name, function(err, code) {
+    fs.readFile(__dirname + '/browser/' + name, function(err, code) {
       if(err) {
         counter = -1
         return callback(err)
