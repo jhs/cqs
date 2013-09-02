@@ -17,6 +17,7 @@ var defaultable = require('defaultable');
 defaultable(module,
   { 'visibility_timeout' : 30
   , 'browser_attachments': false
+  , 'allow_foreign_docs' : false
   }, function(module, exports, DEFS, require) {
 
 
@@ -56,6 +57,7 @@ function Queue (opts) {
 
   self.cache_confirmation = true;
   self.browser_attachments = !!(opts.browser_attachments);
+  self.allow_foreign_docs = opts.allow_foreign_docs
 
   self.log = lib.log4js.getLogger('queue/' + (self.name || 'untitled'));
   self.log.setLevel(lib.LOG_LEVEL);
@@ -128,6 +130,8 @@ Queue.prototype.create = function create_queue(callback) {
 
     if(!ddoc._rev)
       ddoc = new queue_ddoc.DDoc
+
+    ddoc.allow_foreign_docs = self.allow_foreign_docs
 
     ddoc.queues[self.name] = ddoc.queues[self.name] ||
       { ApproximateNumberOfMessages          : 0
