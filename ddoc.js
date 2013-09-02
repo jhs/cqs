@@ -100,12 +100,11 @@ function validate_doc_update(newDoc, oldDoc, userCtx, secObj) {
   var ddoc = this
   var msg_id_re = /^CQS\/(.+?)\/([0-9a-f]{32})($|\/(.*)$)/
 
-  if(! newDoc._id.match(/^CQS\//)) // A simple test, hopefully future-proof
-    throw {'forbidden': 'This database is for CQS only'}
-
   var match = newDoc._id.match(msg_id_re)
+  if(!match && ddoc.allow_foreign_docs)
+    return // Ignore this non-CQS document.
   if(!match)
-    throw {'forbidden':'Invalid message id'}
+    throw {'forbidden': 'This database is for CQS only; bad message ID: ' + newDoc._id}
 
   var queue_id = match[1]
     , msg_id   = match[2]
