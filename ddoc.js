@@ -224,8 +224,9 @@ DDoc.prototype.copy_template = function() {
 // Attach the web browser port.
 DDoc.prototype.add_browser = function(callback) {
   var counter = 0
+    , self = this
   
-  this._attachments = this._attachments || {};
+  this._attachments = this._attachments || {}
 
   ;['cqs.min.js', 'showlist.js', 'index.html']
   .forEach(function(name) {
