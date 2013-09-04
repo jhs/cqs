@@ -238,7 +238,7 @@ DDoc.prototype.add_browser = function(callback) {
         return callback(err)
       }
 
-      this._attachments[name] = { content_type: name.substr(-3) === '.js' ? 'text/javascript' : 'text/html'
+      self._attachments[name] = { content_type: name.substr(-3) === '.js' ? 'text/javascript' : 'text/html'
                                 , data         : code.toString('base64')
                                 }
 
