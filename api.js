@@ -40,4 +40,4 @@ module.exports =
           , 'Message': message.Message
           };
 
-}) // defaultable
+}, require) // defaultable

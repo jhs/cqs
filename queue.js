@@ -17,13 +17,13 @@ var defaultable = require('defaultable');
 defaultable(module,
   { 'visibility_timeout' : 30
   , 'browser_attachments': false
-  , 'allow_foreign_docs' : false
   }, function(module, exports, DEFS, require) {
 
 
 var lib = require('./lib')
   , txn = require('txn')
   , util = require('util')
+  , debug = require('debug')
   , couch = require('./couch')
   , assert = require('assert')
   , message = require('./message')
@@ -57,10 +57,8 @@ function Queue (opts) {
 
   self.cache_confirmation = true;
   self.browser_attachments = !!(opts.browser_attachments);
-  self.allow_foreign_docs = opts.allow_foreign_docs
 
-  self.log = lib.log4js.getLogger('queue/' + (self.name || 'untitled'));
-  self.log.setLevel(lib.LOG_LEVEL);
+  self.log = debug('cqs:queue:' + (self.name || 'untitled'));
 }
 
 Queue.prototype.confirm =
@@ -96,7 +94,7 @@ Queue.prototype.confirmed = function after_confirmed(opt, callback) {
   })
 
   function confirm_queue(done) {
-    self.log.debug('Confirming queue: ' + self.name);
+    self.log('Confirming queue: ' + self.name);
     self.db.request(lib.enc_id(DDOC_ID), function(er, res) {
       if(er)
         return done(er)
@@ -105,7 +103,7 @@ Queue.prototype.confirmed = function after_confirmed(opt, callback) {
         if(opt != '--allow-missing')
           return done(new Error('Queue does not exist: ' + self.name))
 
-        self.log.warn('Using non-existent queue: ' + self.name)
+        self.log('Using non-existent queue: ' + self.name)
         res.body.queues[self.name] = {}
       }
 
@@ -125,13 +123,11 @@ Queue.prototype.create = function create_queue(callback) {
   })
 
   function add_queue(ddoc, to_txn) {
-    //self.log.debug('Add queue to ddoc: %j', ddoc)
+    //self.log('Add queue to ddoc: %j', ddoc)
     var now = new Date
 
     if(!ddoc._rev)
       ddoc = new queue_ddoc.DDoc
-
-    ddoc.allow_foreign_docs = self.allow_foreign_docs
 
     ddoc.queues[self.name] = ddoc.queues[self.name] ||
       { ApproximateNumberOfMessages          : 0
@@ -157,8 +153,8 @@ Queue.prototype.create = function create_queue(callback) {
     if(er)
       return callback(er)
 
-    self.log.debug('new_ddoc: %j', new_ddoc._id)
-    self.log.debug('Created queue: ' + self.name)
+    self.log('new_ddoc: %j', new_ddoc._id)
+    self.log('Created queue: ' + self.name)
 
     // Consider myself confirmed as well.
     self.db.known_queues[self.name] = new lib.Once
@@ -241,12 +237,12 @@ Queue.prototype.receive = function(opts, callback) {
       var messages = [], count = 0;
       function on_receive(er, pos, msg) {
         if(er && er.statusCode != 409 && er.error != 'conflict') {
-          self.log.debug('Receive error: ' + er);
+          self.log('Receive error: ' + er);
           return callback(er);
         }
 
         if(er && er.statusCode == 409 && er.error == 'conflict') {
-          self.log.debug('Missed message '+pos+': ' + msg.MessageId);
+          self.log('Missed message '+pos+': ' + msg.MessageId);
           msg = null;
         }
 
@@ -368,7 +364,7 @@ Queue.prototype.set = function set_attrs(opts, callback) {
 
   opts = lib.JDUP(opts)
 
-  self.log.debug('Set attributes: ' + self.name);
+  self.log('Set attributes: ' + self.name);
   self.confirmed('--force', function(er) {
     if(er)
       return callback(er)
@@ -394,7 +390,7 @@ Queue.prototype.set = function set_attrs(opts, callback) {
   })
 
   function update_attrs(ddoc, to_txn) {
-    //self.log.debug('Update queue on ddoc: %j', ddoc)
+    //self.log('Update queue on ddoc: %j', ddoc)
     var now = new Date
       , queue = ddoc.queues[self.name]
 
@@ -442,7 +438,7 @@ Queue.prototype.GetAttributes = function get_attrs(attrs, callback, extra) {
   assert.ok(Array.isArray(attrs));
   assert.ok(callback);
 
-  self.log.debug('Get attributes: ' + self.name);
+  self.log('Get attributes: ' + self.name);
   confirmer(function(er) {
     if(er) return callback(er);
     callback(null, self);
@@ -568,4 +564,4 @@ module.exports = { "Queue" : Queue
 //
 
 
-}) // defaultable
+}, require) // defaultable

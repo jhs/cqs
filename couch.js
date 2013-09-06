@@ -31,6 +31,7 @@ var lib = require('./lib')
   , events = require('events')
   , assert = require('assert')
   , follow = require('follow')
+  , debug = require('debug')
   , querystring = require('querystring')
 
 //
@@ -52,8 +53,7 @@ function Couch (opts) {
   self.time_C  = opts.time_C  || null;
   self.known_dbs = null;
 
-  self.log = lib.log4js.getLogger('Couch/' + self.url);
-  self.log.setLevel(lib.LOG_LEVEL);
+  self.log = debug('cqs:couch:' + self.url);
 }
 
 Couch.prototype.request = function(opts, callback) {
@@ -70,7 +70,7 @@ Couch.prototype.request = function(opts, callback) {
     if(er) return callback(er);
 
     var method = opts.method || 'GET';
-    self.log.debug(method + ' ' + opts.uri);
+    self.log(method + ' ' + opts.uri);
     return lib.req_json(opts, callback);
   })
 }
@@ -114,7 +114,7 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
   }
 
   confirmer.job(function(done) {
-    self.log.debug('Confirming Couch: ' + self.url);
+    self.log('Confirming Couch: ' + self.url);
 
     req(self.url, function(er, resp, body) {
       if(er) return done(er);
@@ -122,14 +122,14 @@ Couch.prototype.confirmed = function confirm_couch(callback) {
       if(body.couchdb !== 'Welcome')
         return done(new Error('Bad CouchDB response from ' + self.url));
 
-      self.log.debug('Confirming session');
+      self.log('Confirming session');
       req(self.url + '/_session', function(er, resp, session) {
         if(er) return done(er);
 
         if(!session.userCtx)
           return done(new Error('Bad CouchDB response: ' + self.url + '/_session'));
 
-        self.log.debug('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
+        self.log('Couch confirmed: ' + self.url + ': ' + lib.JS(session.userCtx));
         var known_dbs = {};
         return done(null, session.userCtx, known_dbs);
       })
@@ -153,8 +153,7 @@ function Database (opts) {
   self.secObj = null;
   self.known_queues = null;
 
-  self.log = lib.log4js.getLogger('DB/' + self.name);
-  self.log.setLevel(process.env.cqs_log_level || "info");
+  self.log = debug('cqs:db:' + self.name);
 }
 
 
@@ -207,21 +206,21 @@ Database.prototype.confirmed = function(callback) {
   })
 
   function confirm_db(done) {
-    self.log.debug('Confirming DB: ' + self.name);
+    self.log('Confirming DB: ' + self.name);
     self.couch.request(self.name, function(er, resp, db) {
       if(er) return done(er);
 
       if(db.db_name !== self.name)
         return done(new Error('Expected DB name "'+self.name+'": ' + db.db_name));
 
-      self.log.debug('Checking _security: ' + self.name);
+      self.log('Checking _security: ' + self.name);
       self.couch.request(self.name+'/_security', function(er, resp, secObj) {
         if(er) return done(er);
 
         if(!secObj)
           return done(new Error('Bad _security response from ' + self.name + ': ' + lib.JS(secObj)));
 
-        self.log.debug('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
+        self.log('Confirmed DB: ' + self.name + ': ' + lib.JS(secObj));
         var known_queues = {};
         return done(null, secObj, known_queues);
       })
@@ -319,4 +318,4 @@ UUIDGetter.prototype.respond = function(waiter) {
   callback(null, response);
 }
 
-}) // defaultable
+}, require) // defaultable

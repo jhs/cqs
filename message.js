@@ -21,6 +21,7 @@ var lib = require('./lib')
   , couch = require('./couch')
   , events = require('events')
   , assert = require('assert')
+  , debug = require('debug')
   , querystring = require('querystring')
   ;
 
@@ -45,8 +46,7 @@ function Message (opts) {
   self.queue       = opts.queue       || null;
   self.is_heartbeat= opts.is_heartbeat|| false;
 
-  self.log = lib.log4js.getLogger('Message/' + (self.MessageId || 'untitled'));
-  self.log.setLevel(lib.LOG_LEVEL);
+  self.log = debug('cqs:message:' + (self.MessageId || 'untitled'));
 }
 util.inherits(Message, events.EventEmitter);
 
@@ -103,7 +103,7 @@ Message.prototype.send = function send_message(cb) {
               , 'Body'         : self.Body
               };
 
-    //self.log.debug('PUT\n' + util.inspect(doc));
+    //self.log = debug('PUT\n' + util.inspect(doc));
     db.request({method:'PUT',uri:lib.enc_id(doc._id), json:doc}, function(er, resp, result) {
       if(er) return cb(er);
 
@@ -281,10 +281,10 @@ Message.prototype.del = function message_del(callback) {
   self.queue.db.request(req, function(er, resp, result) {
     // Note: delete always returns success.
     if(er)
-      self.log.info('Failed to delete ' + id + ': ' + er.message);
+      self.log = debug('Failed to delete ' + id + ': ' + er.message);
 
     if(!result || result.ok !== true)
-      self.log.info('Unknown response to delete' + lib.JS(result));
+      self.log = debug('Unknown response to delete' + lib.JS(result));
 
     Object.keys(self).forEach(function (key) {
       if(/^[A-Z]/.test(key))
@@ -331,4 +331,4 @@ module.exports = { "Message" : Message
 // Utilities
 //
 
-}) // defaultable
+}, require) // defaultable
