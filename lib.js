@@ -14,15 +14,11 @@
 
 require('defaultable')(module,
   { 'request_timeout': 5000
-  , 'log_module'     : null
   , 'strictSSL'      : true
   }, function(module, exports, DEFS, require) {
 
 var request = require('request').defaults({'strictSSL': DEFS.strictSSL})
   , events = require('events')
-
-exports.log4js = DEFS.log_module || require('log4js')
-exports.LOG_LEVEL = process.env.cqs_log_level || "info";
 
 // A workaround since defaultable seems to be breaking `instanceof` since it re-evaluates modules a lot.
 exports.instanceof = function instance0f(obj, type) {
@@ -174,4 +170,4 @@ Once.prototype.job = function(task) {
   }
 }
 
-}) // defaultable
+}, require) // defaultable

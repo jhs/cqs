@@ -20,6 +20,7 @@ var fs = require('fs')
   , lib = require('./lib')
   , path = require('path')
   , util = require('util')
+  , debug = require('debug')
   , assert = require('assert')
   ;
 
@@ -207,8 +208,7 @@ function DDoc () {
 }
 
 // One common logger for them all, just so it won't get stored in couch.
-DDoc.prototype.log = lib.log4js.getLogger('ddoc');
-DDoc.prototype.log.setLevel(lib.LOG_LEVEL);
+DDoc.prototype.log = debug('cqs:ddoc');
 
 DDoc.prototype.copy_template = function() {
   var self = this;
@@ -283,4 +283,4 @@ function func_from_template(func) {
 }
 
 
-}) // defaultable
+}, require) // defaultable
