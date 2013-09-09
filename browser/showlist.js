@@ -6,7 +6,7 @@ function showList(user, pass, db){
 		url += "@";
 	}
 
-	var cqs = window.cqs.defaults({couch: url + "127.0.0.1:5984", "db": db || "cqs_queue"});
+	var cqs = require('cqs').defaults({couch: url + "127.0.0.1:5984", "db": db || "cqs_queue"});
 
 	cqs.ListQueues(function(err, queues) {
 		if(err) throw err;

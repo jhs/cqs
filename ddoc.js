@@ -22,6 +22,7 @@ var fs = require('fs')
   , util = require('util')
   , debug = require('debug')
   , assert = require('assert')
+  , browserify = require('browserify')
   ;
 
 
@@ -228,24 +229,46 @@ DDoc.prototype.add_browser = function(callback) {
   
   this._attachments = this._attachments || {}
 
-  ;['cqs.min.js', 'showlist.js', 'index.html']
+  ;['showlist.js', 'index.html']
   .forEach(function(name) {
     counter++
 
-    fs.readFile(__dirname + '/browser/' + name, function(err, code) {
+    fs.readFile(__dirname + '/browser/' + name, function(err, data) {
       if(err) {
-        counter = -1
-        return callback(err)
+        handleError(err)
+      } else {
+        var content_type = name.substr(-3) === '.js' ? 'text/javascript' : 'text/html'
+        addFile(name, data, content_type)
       }
-
-      self._attachments[name] = { content_type: name.substr(-3) === '.js' ? 'text/javascript' : 'text/html'
-                                , data         : code.toString('base64')
-                                }
-
-      if(!--counter)
-        callback()
     })
   })
+
+  var parts = []
+
+  browserify('./') // browserify the current module
+    .bundle()
+    .require('./')
+    .on('data', function(data){
+      parts.push(data)
+    })
+    .on('error', handleError)
+    .on('end', function(){
+      addFile('index.js', Buffer.concat(parts), 'text/javascript')
+    })
+
+  function handleError(err){
+    counter = -1
+    callback(err)
+  }
+
+  function addFile(name, data, content_type){
+    self._attachments[name] = { content_type: content_type
+                              , data        : data.toString('base64')
+                              }
+
+    if(!--counter)
+      callback()
+  }
 }
 
 

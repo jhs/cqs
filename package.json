@@ -15,6 +15,7 @@
                      , "follow": "~0.8.0"
                      , "debug": "~0.7.2"
                      , "txn": "~0.2.10"
+                     , "browserify": "~2.29.1"
                      }
 
 , "devDependencies": { "tap": "~0.2.5"
