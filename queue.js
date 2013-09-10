@@ -144,7 +144,7 @@ Queue.prototype.create = function create_queue(callback) {
     if(!self.browser_attachments)
       return to_txn(null, ddoc)
     else
-      ddoc.add_browser(function(er) {
+      queue_ddoc.DDoc.prototype.add_browser.call(ddoc, function(er) {
         return to_txn(er, ddoc)
       })
   }
