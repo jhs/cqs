@@ -21,6 +21,7 @@
 , "devDependencies": { "tap": "~0.2.5"
                      }
 , "browser": { "request" : "browser-request"
+             , "browserify": false
              }
 , "main": "./api"
 }

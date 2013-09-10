@@ -224,7 +224,11 @@ DDoc.prototype.copy_template = function() {
 
 // Attach the web browser port.
 DDoc.prototype.add_browser = function(callback) {
-  var counter = 0
+  if(!browserify){
+    return callback(); //we're running in a browser (skip)
+  }
+
+  var counter = 1
     , self = this
   
   this._attachments = this._attachments || {}
@@ -243,17 +247,17 @@ DDoc.prototype.add_browser = function(callback) {
     })
   })
 
-  var parts = []
+  var file = ''
 
   browserify('./') // browserify the current module
-    .bundle()
     .require('./')
+    .bundle()
     .on('data', function(data){
-      parts.push(data)
+      file += data
     })
     .on('error', handleError)
     .on('end', function(){
-      addFile('index.js', Buffer.concat(parts), 'text/javascript')
+      addFile('index.js', new Buffer(file), 'text/javascript')
     })
 
   function handleError(err){
