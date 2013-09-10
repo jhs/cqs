@@ -250,7 +250,7 @@ DDoc.prototype.add_browser = function(callback) {
   var file = ''
 
   browserify('./') // browserify the current module
-    .require('./')
+    .require('./', {expose: 'cqs'})
     .bundle()
     .on('data', function(data){
       file += data
