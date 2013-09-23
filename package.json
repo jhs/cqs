@@ -1,12 +1,12 @@
 { "name": "cqs"
-, "version": "0.7.9"
+, "version": "0.8.0"
 , "author": { "name": "Jason Smith"
-            , "email": "jhs@iriscouch.com" }
+            , "email": "jhs@nodejitsu.com" }
 , "description": "CouchDB Queue Service: an Amazon SQS implementation on CouchDB"
 , "tags"       : ["couchdb", "queue", "amazon", "sqs", "aws"]
-, "homepage": "http://github.com/iriscouch/cqs"
+, "homepage": "http://github.com/nodejitsu/cqs"
 , "repository": { "type": "git"
-                , "url": "git://github.com/iriscouch/cqs" }
+                , "url": "git://github.com/nodejitsu/cqs" }
 , "engines": [ "node" ]
 
 , "dependencies"   : { "request" : "~2.16.6"
