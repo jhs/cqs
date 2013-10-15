@@ -24,4 +24,5 @@
              , "browserify": false
              }
 , "main": "./api"
+, "scripts": { "test": "./node_modules/.bin/tap test/tap" }
 }
