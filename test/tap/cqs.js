@@ -532,3 +532,54 @@ test('Receive conflict', function(t) {
     }
   })
 })
+
+test('Follow changes', function(t) {
+  var changes = state.foo.changes()
+
+  var unexpectedMessage = function() {
+    throw new Error('unexpected message')
+  }
+
+  var receiveChange = function() {
+    changes.once('message', function(msg) {
+      t.equal(msg.Body, 'msg2')
+      msg.del(function(er) {
+        if(er) throw er;
+        changes.stop();
+        t.end()
+      })
+    })
+    changes.removeListener('message', unexpectedMessage);
+    changes.resume();
+  }
+
+  var testPaused = function() {
+    changes.pause()
+
+    state.foo.send('msg2', function(er) {
+      if(er) throw er;
+
+      setTimeout(receiveChange, 100);
+    })
+  }
+
+  changes.once('message', function(msg) {
+    t.equal(msg.Body, 'msg1')
+
+    changes.on('message', unexpectedMessage)
+
+    msg.del(function(er) {
+      if(er) throw er;
+
+      //should not receive messages from other queues
+      state.bar.send('noMsg', function(er){
+        if(er) throw er;
+        testPaused();
+      })
+    })
+  })
+
+  state.foo.send('msg1', function(er) {
+    if(er) throw er;
+  })
+})
