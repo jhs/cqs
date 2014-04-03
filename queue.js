@@ -289,6 +289,7 @@ Queue.prototype.changes = function(opts) {
   var limit = opts.ConcurrencyLimit || 1e3
   var count = 0
   var vis_timeout = opts.VisibilityTimeout || self.VisibilityTimeout
+  var is_heartbeat = opts.is_heartbeat || false
 
   assert.ok(vis_timeout >= 0, "Visibility timeout is too low")
   assert.ok(vis_timeout <= 43200, "Visibility timeout is too high")
@@ -310,7 +311,7 @@ Queue.prototype.changes = function(opts) {
     var msg = new message.Message(msg_opts)
     msg.queue = self
     msg.VisibilityTimeout = vis_timeout
-    msg.is_heartbeat      = false
+    msg.is_heartbeat      = is_heartbeat
     msg.mvcc = { _id: change.doc._id, _rev: change.doc._rev }
     msg.receive(function(err) {
       if(err) {
