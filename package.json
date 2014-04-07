@@ -1,28 +1,44 @@
-{ "name": "cqs"
-, "version": "0.8.2"
-, "author": { "name": "Jason Smith"
-            , "email": "jhs@nodejitsu.com" }
-, "description": "CouchDB Queue Service: an Amazon SQS implementation on CouchDB"
-, "tags"       : ["couchdb", "queue", "amazon", "sqs", "aws"]
-, "homepage": "http://github.com/nodejitsu/cqs"
-, "repository": { "type": "git"
-                , "url": "git://github.com/nodejitsu/cqs" }
-, "engines": [ "node" ]
-
-, "dependencies"   : { "request" : "~2.16.6"
-                     , "browser-request" : "~0.2"
-                     , "defaultable": "0.7.2"
-                     , "follow": "~0.8.0"
-                     , "debug": "~0.7.2"
-                     , "txn": "~0.2.10"
-                     , "browserify": "~2.29.1"
-                     }
-
-, "devDependencies": { "tap": "~0.2.5"
-                     }
-, "browser": { "request" : "browser-request"
-             , "browserify": false
-             }
-, "main": "./api"
-, "scripts": { "test": "tap test/tap/*" }
+{
+  "name": "cqs",
+  "version": "0.9.0",
+  "author": {
+    "name": "Jason Smith",
+    "email": "jhs@nodejitsu.com"
+  },
+  "description": "CouchDB Queue Service: an Amazon SQS implementation on CouchDB",
+  "tags": [
+    "couchdb",
+    "queue",
+    "amazon",
+    "sqs",
+    "aws"
+  ],
+  "homepage": "http://github.com/nodejitsu/cqs",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nodejitsu/cqs"
+  },
+  "engines": [
+    "node"
+  ],
+  "dependencies": {
+    "request": "~2.16.6",
+    "browser-request": "~0.2",
+    "defaultable": "0.7.2",
+    "follow": "~0.8.0",
+    "debug": "~0.7.2",
+    "txn": "~0.2.10",
+    "browserify": "~2.29.1"
+  },
+  "devDependencies": {
+    "tap": "~0.2.5"
+  },
+  "browser": {
+    "request": "browser-request",
+    "browserify": false
+  },
+  "main": "./api",
+  "scripts": {
+    "test": "tap test/tap/*"
+  }
 }
