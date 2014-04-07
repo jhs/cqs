@@ -302,7 +302,7 @@ Queue.prototype.changes = function(opts) {
   }
 
   feed.on('change', function(change) {
-    if(count++ > limit) feed.pause()
+    if(++count >= limit) feed.pause()
 
     var msg_opts = {}
     lib.copy(change.doc, msg_opts, 'uppercase')
