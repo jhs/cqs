@@ -45,6 +45,7 @@ function Message (opts) {
   self.IdExtra     = opts.IdExtra     || null;
   self.queue       = opts.queue       || null;
   self.is_heartbeat= opts.is_heartbeat|| false;
+  self.seq         = opts.seq         || null;
 
   self.log = debug('cqs:message:' + (self.MessageId || 'untitled'));
 }

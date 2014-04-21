@@ -306,6 +306,7 @@ Queue.prototype.changes = function(opts) {
 
     var msg_opts = {}
     lib.copy(change.doc, msg_opts, 'uppercase')
+    msg_opts.seq = change.seq;
     msg_opts.MessageId = change.id.substr(prefix.length)
 
     var msg = new message.Message(msg_opts)
