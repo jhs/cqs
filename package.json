@@ -22,16 +22,16 @@
     "node"
   ],
   "dependencies": {
-    "request": "~2.16.6",
-    "browser-request": "~0.2",
+    "browser-request": "~0.3.3",
+    "browserify": "~7.0.0",
+    "debug": "~2.1.0",
     "defaultable": "0.7.2",
-    "follow": "~0.8.0",
-    "debug": "~0.7.2",
-    "txn": "~0.2.10",
-    "browserify": "~2.29.1"
+    "follow": "~0.11.4",
+    "request": "~2.49.0",
+    "txn": "~0.2.10"
   },
   "devDependencies": {
-    "tap": "~0.2.5"
+    "tap": "~0.4.13"
   },
   "browser": {
     "request": "browser-request",
